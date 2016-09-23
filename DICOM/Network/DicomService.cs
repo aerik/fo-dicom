@@ -39,9 +39,9 @@ namespace Dicom.Network
 
         private DicomMessage _dimse;
 
-        private Stream _dimseStream;
+        protected Stream _dimseStream;
 
-        private IFileReference _dimseStreamFile;
+        protected IFileReference _dimseStreamFile;
 
         private int _readLength;
 
@@ -244,7 +244,11 @@ namespace Dicom.Network
                     {
                         if (_pduQueue.Count > 0 || _msgQueue.Count > 0 || _pending.Count > 0)
                         {
-                            return;
+                            Logger.Warn("Closing DicomService while there are still items in one or more queues");
+                            _pduQueue.Clear();
+                            _msgQueue.Clear();
+                            _pending.Clear();
+                            //return;
                         }
                     }
                 }
@@ -843,7 +847,10 @@ namespace Dicom.Network
 
                 try
                 {
-                    await _network.AsStream().WriteAsync(buffer, 0, (int)ms.Length).ConfigureAwait(false);
+                    if (_isConnected && _network.AsStream().CanWrite)
+                    {
+                        await _network.AsStream().WriteAsync(buffer, 0, (int)ms.Length).ConfigureAwait(false);
+                    }
                 }
                 catch (IOException e)
                 {
@@ -896,9 +903,13 @@ namespace Dicom.Network
                     if (!Options.IgnoreAsyncOps && Association.MaxAsyncOpsInvoked > 0
                         && _pending.Count >= Association.MaxAsyncOpsInvoked)
                     {
+                        Logger.Debug("Cannot send messages since pending: {pending} would exceed max async ops invoked: {invoked}",
+                            _pending.Count,
+                            Association.MaxAsyncOpsInvoked);
+                        return;
                         // Cannot easily recover from this unwanted state, so better to throw.
                         throw new DicomNetworkException(
-                            "Cannot send messages since pending: {pending} would exceed max async ops invoked: {invoked}",
+                            "Cannot send messages since pending: {0} would exceed max async ops invoked: {1}",
                             _pending.Count,
                             Association.MaxAsyncOpsInvoked);
                     }
@@ -1058,8 +1069,11 @@ namespace Dicom.Network
                         msg.Dataset.RemoveGroupLengths();
 
                         if (msg.Dataset.InternalTransferSyntax != dimse.PresentationContext.AcceptedTransferSyntax)
+                        {
+                            Logger.Debug("{logId} Changing Transfer Syntax from {0} to {1}", LogID, msg.Dataset.InternalTransferSyntax, dimse.PresentationContext.AcceptedTransferSyntax);
                             msg.Dataset =
                                 msg.Dataset.Clone(dimse.PresentationContext.AcceptedTransferSyntax);
+                        }
                     }
 
                     Logger.Info("{logId} -> {dicomMessage}", LogID, msg.ToString(Options.LogDimseDatasets));
