@@ -23,6 +23,10 @@ namespace Dicom.Network
     {
         #region FIELDS
 
+        protected Stream _dimseStream;
+
+        protected IFileReference _dimseStreamFile;
+
         private readonly INetworkStream _network;
 
         private readonly object _lock;
@@ -38,10 +42,6 @@ namespace Dicom.Network
         private readonly List<DicomRequest> _pending;
 
         private DicomMessage _dimse;
-
-        protected Stream _dimseStream;
-
-        protected IFileReference _dimseStreamFile;
 
         private int _readLength;
 
@@ -178,7 +178,6 @@ namespace Dicom.Network
             _dimseStream = _dimseStreamFile.Open();
             file.Save(_dimseStream);
             _dimseStream.Seek(0, SeekOrigin.End);
-
         }
 
         /// <summary>
@@ -255,6 +254,15 @@ namespace Dicom.Network
 
                 _isConnected = false;
                 _network.Dispose();
+
+                if (this is IDicomServiceProvider)
+                {
+                    (this as IDicomServiceProvider).OnConnectionClosed(exception);
+                }
+                else if (this is IDicomServiceUser)
+                {
+                    (this as IDicomServiceUser).OnConnectionClosed(exception);
+                }
             }
             catch (Exception e)
             {
@@ -267,19 +275,11 @@ namespace Dicom.Network
             if (exception != null)
             {
                 Logger.Error("Connection closed with error: {@error}", exception);
+                throw exception;
             }
             else
             {
                 Logger.Info("Connection closed");
-            }
-
-            if (this is IDicomServiceProvider)
-            {
-                (this as IDicomServiceProvider).OnConnectionClosed(exception);
-            }
-            else if (this is IDicomServiceUser)
-            {
-                (this as IDicomServiceUser).OnConnectionClosed(exception);
             }
         }
 
@@ -351,8 +351,8 @@ namespace Dicom.Network
                             {
                                 Association = new DicomAssociation
                                                   {
-                                                      RemoteHost = _network.Host,
-                                                      RemotePort = _network.Port
+                                                      RemoteHost = _network.RemoteHost,
+                                                      RemotePort = _network.RemotePort
                                                   };
                                 var pdu = new AAssociateRQ(Association);
                                 pdu.Read(raw);
