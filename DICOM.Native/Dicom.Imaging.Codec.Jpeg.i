@@ -13,6 +13,9 @@ namespace IJGVERS {
     // error handler, executes longjmp
     void ErrorExit(j_common_ptr cinfo) {
         ErrorStruct *myerr = (ErrorStruct *)cinfo->err;
+		char buffer[JMSG_LENGTH_MAX];
+        (*cinfo->err->format_message)((jpeg_common_struct *)cinfo, buffer); /* Create the message */
+		throw gcnew Exception(gcnew String(buffer));
     }
 
     // message handler for warning messages and the like
