@@ -53,26 +53,21 @@ namespace Dicom.IO.Buffer
             {
                 throw new ArgumentOutOfRangeException("Offset and count cannot be less than zero");
             }
-            return GetByteRange((uint)offset, (uint)count);
+            return GetByteRange((uint)offset, count);
         }
 
-        public byte[] GetByteRange(uint uoffset, uint count)
+        public byte[] GetByteRange(uint uoffset, int count)
         {
             int pos = 0;
             for (; pos < Buffers.Count && uoffset > Buffers[pos].Size; pos++) uoffset -= Buffers[pos].Size;
+
+            int offset = (int)uoffset;
 
             int offset2 = 0;
             byte[] data = new byte[count];
             for (; pos < Buffers.Count && count > 0; pos++)
             {
-                uint uremain = Math.Min(Buffers[pos].Size - uoffset, count);
-
-                if(uoffset > int.MaxValue || uremain > int.MaxValue)
-                {
-                    throw new Exception("Out of range error in GetByteRange");
-                }
-                int offset = (int)uoffset;
-                int remain = (int)uremain;
+                int remain = Math.Min((int)Buffers[pos].Size - offset, count);
 
                 if (Buffers[pos].IsMemory)
                 {
@@ -93,7 +88,7 @@ namespace Dicom.IO.Buffer
                     System.Buffer.BlockCopy(temp, 0, data, offset2, remain);
                 }
 
-                count -= uremain;
+                count -= remain;
                 offset2 += remain;
                 if (offset > 0) offset = 0;
             }

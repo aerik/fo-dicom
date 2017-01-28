@@ -41,7 +41,7 @@ namespace Dicom.IO.Buffer
                 if (Internal is CompositeByteBuffer)
                 {
                     CompositeByteBuffer cbuf = (CompositeByteBuffer)Internal;
-                    return cbuf.GetByteRange(Offset, Length);
+                    return cbuf.GetByteRange(Offset, (int)Length);
                 }
                 else
                 {

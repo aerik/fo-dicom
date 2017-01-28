@@ -43,7 +43,9 @@ namespace Dicom.IO.Buffer
         public byte[] GetByteRange(int offset, int count)
         {
             byte[] data = new byte[count];
-            System.Buffer.BlockCopy(Buffer.Data, offset, data, 0, Math.Min((int)Buffer.Size, count));
+            count = Math.Min((int)(Buffer.Size - offset), count);
+            System.Buffer.BlockCopy(Buffer.Data, offset, data, 0, count);
+            //System.Buffer.BlockCopy(Buffer.Data, offset, data, 0, Math.Min((int)Buffer.Size, count));
             return data;
         }
 
