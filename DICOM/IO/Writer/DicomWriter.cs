@@ -303,19 +303,39 @@ namespace Dicom.IO.Writer
 
         private static void WriteBuffer(IByteTarget target, IByteBuffer buffer, uint largeObjectSize)
         {
-            var offset = 0;
-            var remainingSize = buffer.Size;
+            uint offset = 0;
+            uint remainingSize = buffer.Size;
 
             while (remainingSize > largeObjectSize)
             {
-                var range = buffer.GetByteRange(offset, (int)largeObjectSize);
+                byte[] range = GetBufferRange(buffer, offset, (int)largeObjectSize);
                 target.Write(range, 0, largeObjectSize);
 
-                offset += (int)largeObjectSize;
+                offset += largeObjectSize;
                 remainingSize -= largeObjectSize;
             }
+            byte[] endRange = GetBufferRange(buffer, offset, (int)remainingSize);
+            target.Write(endRange, 0, remainingSize);
+        }
 
-            target.Write(buffer.GetByteRange(offset, (int)remainingSize), 0, remainingSize);
+        private static byte[] GetBufferRange(IByteBuffer buffer, uint offset, int count)
+        {
+            byte[] range = null;
+            if (buffer is CompositeByteBuffer)
+            {
+                var cbuf = buffer as CompositeByteBuffer;
+                range = cbuf.GetByteRange(offset, count);
+            }
+            else
+            {
+                if (offset > ((uint)int.MaxValue))//
+                {
+                    string bufName = nameof(buffer);
+                    throw new System.ArgumentOutOfRangeException("Offset greater than " + bufName + " buffer allows");
+                }
+                range = buffer.GetByteRange((int)offset, count);
+            }
+            return range;
         }
 
 #if !NET35
