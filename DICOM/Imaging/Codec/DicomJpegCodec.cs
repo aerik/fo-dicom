@@ -157,7 +157,7 @@ namespace Dicom.Imaging.Codec
                 BinaryReader br = EndianBinaryReader.Create(ms, Endian.Big);
 
                 long length = ms.Length;
-                while (ms.Position < length-2)
+                while (ms.Position < length)
                 {
                     ushort marker = br.ReadUInt16();
                     switch (marker)

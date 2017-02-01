@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2016 fo-dicom contributors.
+// Copyright (c) 2012-2017 fo-dicom contributors.
 // Licensed under the Microsoft Public License (MS-PL).
 
 namespace Dicom.Imaging.Codec
@@ -186,6 +186,16 @@ namespace Dicom.Imaging.Codec
             DicomJpegParams parameters)
         {
             var pixelCount = oldPixelData.Height * oldPixelData.Width;
+
+            if (parameters.ConvertColorspaceToRGB)
+            {
+                if (oldPixelData.PixelRepresentation == PixelRepresentation.Signed)
+                    throw new DicomCodecException(
+                        "JPEG codec unable to perform colorspace conversion on signed pixel data");
+
+                newPixelData.PhotometricInterpretation = PhotometricInterpretation.Rgb;
+                newPixelData.PlanarConfiguration = PlanarConfiguration.Interleaved;
+            }
 
             if (newPixelData.PhotometricInterpretation == PhotometricInterpretation.YbrIct
                 || newPixelData.PhotometricInterpretation == PhotometricInterpretation.YbrRct)

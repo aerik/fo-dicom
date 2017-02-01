@@ -63,8 +63,9 @@ namespace Dicom {
 				params.bytesperline = oldPixelData->BytesAllocated * oldPixelData->Width * oldPixelData->SamplesPerPixel;
 				params.components = oldPixelData->SamplesPerPixel;
 
-				params.ilv =
-					oldPixelData->SamplesPerPixel == 3 && oldPixelData->PlanarConfiguration == PlanarConfiguration::Interleaved
+				params.ilv = oldPixelData->SamplesPerPixel == 1 
+					? CharlsInterleaveModeType::None : 
+					oldPixelData->PlanarConfiguration == PlanarConfiguration::Interleaved
 					? CharlsInterleaveModeType::Sample
 					: CharlsInterleaveModeType::Line;
 				params.colorTransform = CharlsColorTransformationType::None;
