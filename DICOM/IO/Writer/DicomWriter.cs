@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2012-2016 fo-dicom contributors.
+﻿// Copyright (c) 2012-2017 fo-dicom contributors.
 // Licensed under the Microsoft Public License (MS-PL).
 
 namespace Dicom.IO.Writer
@@ -328,7 +328,7 @@ namespace Dicom.IO.Writer
             }
             else
             {
-                if (offset > ((uint)int.MaxValue))//
+                if (offset > ((uint)int.MaxValue))//other buffers only accept ints
                 {
                     string bufName = nameof(buffer);
                     throw new System.ArgumentOutOfRangeException("Offset greater than " + bufName + " buffer allows");
