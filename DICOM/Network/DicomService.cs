@@ -396,6 +396,7 @@ namespace Dicom.Network
                                     pdu.Result,
                                     pdu.Source,
                                     pdu.Reason);
+                                TryCloseConnection();
                                 break;
                             }
                         case 0x04:
@@ -1118,6 +1119,10 @@ namespace Dicom.Network
                 source,
                 reason);
             this.SendPDUAsync(new AAssociateRJ(result, source, reason)).Wait();
+            if (!TryCloseConnection())
+            {
+                Logger.Warn("{logId} -> Could not close connection after sending AssociationReject", LogID);
+            }
         }
 
         /// <summary>

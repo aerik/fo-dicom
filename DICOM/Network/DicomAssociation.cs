@@ -39,12 +39,12 @@ namespace Dicom.Network
         /// <summary>
         /// Gets the calling application entity.
         /// </summary>
-        public string CallingAE { get; set; }
+        public string CallingAE { get; internal set; }
 
         /// <summary>
         /// Gets the called application entity.
         /// </summary>
-        public string CalledAE { get; set; }
+        public string CalledAE { get; internal set; }
 
         /// <summary>
         /// Gets or sets the supported maximum number of asynchronous operations invoked.
@@ -59,12 +59,12 @@ namespace Dicom.Network
         /// <summary>
         /// Gets the remote host.
         /// </summary>
-        public string RemoteHost { get; set; }
+        public string RemoteHost { get; internal set; }
 
         /// <summary>
         /// Gets the remote port.
         /// </summary>
-        public int RemotePort { get; set; }
+        public int RemotePort { get; internal set; }
 
         /// <summary>
         /// Gets the remote implementation class UID.

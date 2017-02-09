@@ -37,6 +37,8 @@ namespace Dicom.Network
 
         private bool aborted;
 
+        private Logger _logger;
+
         #endregion
 
         #region CONSTRUCTORS
@@ -86,7 +88,17 @@ namespace Dicom.Network
         /// <summary>
         /// Gets or sets logger that is passed to the underlying <see cref="DicomService"/> implementation.
         /// </summary>
-        public Logger Logger { get; set; }
+        public Logger Logger
+        {
+            get
+            {
+                return _logger ?? (_logger = LogManager.GetLogger("Dicom.Network"));
+            }
+            set
+            {
+                _logger = value;
+            }
+        }
 
         /// <summary>
         /// Gets or sets options to control behavior of <see cref="DicomService"/> base class.
@@ -303,25 +315,18 @@ namespace Dicom.Network
         {
             try
             {
+                var timedOut = false;
                 using (var cancellationSource = new CancellationTokenSource(millisecondsTimeout))
+                using (cancellationSource.Token.Register(() => timedOut = true))
                 {
-                    while (true)
-                    {
-                        if (this.associateNotifier != null && this.associateNotifier.Task.IsCompleted)
-                        {
-                            return this.associateNotifier.Task.Status == TaskStatus.RanToCompletion
-                                   && this.associateNotifier.Task.Result;
-                        }
-
-                        await Task.Delay(50, cancellationSource.Token).ConfigureAwait(false);
-                    }
+                    while (this.associateNotifier == null) await Task.Delay(1, cancellationSource.Token).ConfigureAwait(false);
+                    return await this.associateNotifier.Task.ConfigureAwait(false) && !timedOut;
                 }
             }
-            catch (TaskCanceledException)
+            catch
             {
-            }
-
             return false;
+        }
         }
 
         /// <summary>
@@ -384,12 +389,12 @@ namespace Dicom.Network
                     service = new DicomServiceUser(this, stream, association, Options, FallbackEncoding, Logger);
                 }
 
-                await associateNotifier.Task.ConfigureAwait(false);
+                var associated = await associateNotifier.Task.ConfigureAwait(false);
 
-                var send = false;
+                bool send;
                 lock (locker)
                 {
-                    send = requests.Count > 0;
+                    send = associated && requests.Count > 0;
                 }
 
                 if (send)
@@ -406,17 +411,22 @@ namespace Dicom.Network
                         service.SendRequest(request);
                     }
                 }
-                else
+                else if (associated)
                 {
                     await service.DoSendAssociationReleaseRequestAsync().ConfigureAwait(false);
                 }
 
                 await completeNotifier.Task.ConfigureAwait(false);
             }
+            catch (DicomAssociationRejectedException ar)
+            {
+                Logger.Warn("Failed to send due to: {@error}", ar);
+                //throw;
+            }
             catch (Exception e)
             {
                 Logger.Error("Failed to send due to: {@error}", e);
-                throw;
+                //throw;
             }
             finally
             {
