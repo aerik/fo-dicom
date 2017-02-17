@@ -438,6 +438,17 @@ namespace Dicom
                                                           Endian = Endian.Little
                                                       };
 
+        /// <summary>MPEG2 Main Profile @ Main Level</summary>
+        public static DicomTransferSyntax MP4HighProfileLevel41 = new DicomTransferSyntax
+                                                    {
+                                                        UID = DicomUID.MPEG4AVCH264HighProfileLevel41,
+                                                        IsExplicitVR = true,
+                                                        IsEncapsulated = true,
+                                                        IsLossy = true,
+                                                        LossyCompressionMethod = "unknown",
+                                                        Endian = Endian.Little
+                                                    };
+
         /// <summary>RLE Lossless</summary>
         public static DicomTransferSyntax RLELossless = new DicomTransferSyntax
                                                             {
