@@ -396,7 +396,7 @@ namespace Dicom.Network
                                     pdu.Result,
                                     pdu.Source,
                                     pdu.Reason);
-                                TryCloseConnection();
+                                if (TryCloseConnection()) return;
                                 break;
                             }
                         case 0x04:
