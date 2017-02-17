@@ -121,8 +121,9 @@ namespace Dicom.Network
                     var tx = new List<DicomTransferSyntax>();
                     if (cstore.TransferSyntax != DicomTransferSyntax.ImplicitVRLittleEndian) tx.Add(cstore.TransferSyntax);
                     if (cstore.AdditionalTransferSyntaxes != null) tx.AddRange(cstore.AdditionalTransferSyntaxes);
-                    tx.Add(DicomTransferSyntax.ExplicitVRLittleEndian);
-                    tx.Add(DicomTransferSyntax.ImplicitVRLittleEndian);
+                    //removed to allow for sending only a compressed transfer syntax if wanted
+                    //tx.Add(DicomTransferSyntax.ExplicitVRLittleEndian);
+                    //tx.Add(DicomTransferSyntax.ImplicitVRLittleEndian);
 
                     Add(cstore.SOPClassUID, tx.ToArray());
                 }
