@@ -92,7 +92,7 @@ namespace Dicom.Imaging
         public PhotometricInterpretation PhotometricInterpretation { get; private set; }
 
         /// <summary>Number of frames contained in image data.</summary>
-        public int NumberOfFrames
+        public uint NumberOfFrames
         {
             get
             {

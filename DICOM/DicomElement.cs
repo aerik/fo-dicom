@@ -907,6 +907,11 @@ namespace Dicom
         {
         }
 
+        public DicomIntegerString(DicomTag tag, params uint[] values)
+            : base(tag, DicomEncoding.Default, values.Select(x => x.ToString(CultureInfo.InvariantCulture)).ToArray())
+        {
+        }
+
         public DicomIntegerString(DicomTag tag, params string[] values)
             : base(tag, DicomEncoding.Default, values)
         {

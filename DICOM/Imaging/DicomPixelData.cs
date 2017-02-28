@@ -67,11 +67,11 @@ namespace Dicom.Imaging
         /// <summary>
         /// DICOM image Number of frames. This value usually equals 1 for single frame images
         /// </summary>
-        public int NumberOfFrames
+        public uint NumberOfFrames
         {
             get
             {
-                return Dataset.Get<ushort>(DicomTag.NumberOfFrames, 0, 1);
+                return Dataset.Get<uint>(DicomTag.NumberOfFrames, 0, 1);
             }
             set
             {
