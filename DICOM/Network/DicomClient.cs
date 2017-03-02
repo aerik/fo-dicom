@@ -653,7 +653,7 @@ namespace Dicom.Network
             {
                 if (IsConnected)
                 {
-                    SendAbort(DicomAbortSource.ServiceUser, DicomAbortReason.NotSpecified);
+                    CancelAndSendAbort(DicomAbortSource.ServiceUser, DicomAbortReason.NotSpecified);
                 }
             }
 

@@ -300,8 +300,11 @@ namespace Dicom.Network
                     _readLength = 6;
 
                     var buffer = new byte[6];
-                    var count = await stream.ReadAsync(buffer, 0, 6).ConfigureAwait(false);
-
+                    var count = 0;
+                    if (stream.CanRead)
+                    {
+                        count = await stream.ReadAsync(buffer, 0, 6).ConfigureAwait(false);
+                    }
                     do
                     {
                         if (count == 0)
@@ -1151,6 +1154,30 @@ namespace Dicom.Network
         protected void SendAbort(DicomAbortSource source, DicomAbortReason reason)
         {
             Logger.Info("{logId} -> Abort [source: {source}; reason: {reason}]", LogID, source, reason);
+            this.SendPDUAsync(new AAbort(source, reason)).Wait();
+        }
+
+        /// <summary>
+        /// Clears queues and aborts
+        /// Aerik Sylvan 20170301
+        /// </summary>
+        /// <param name="source"></param>
+        /// <param name="reason"></param>
+        protected void CancelAndSendAbort(DicomAbortSource source, DicomAbortReason reason)
+        {
+            Logger.Info("{logId} -> Cancel and Abort [source: {source}; reason: {reason}]", LogID, source, reason);
+            lock (_lock)
+            {
+                while(_pduQueue.Count > 0)
+                {
+                    _pduQueue.Dequeue();
+                }
+                while(_msgQueue.Count > 0)
+                {
+                    _msgQueue.Dequeue();
+                }
+                //pending?
+            }
             this.SendPDUAsync(new AAbort(source, reason)).Wait();
         }
 
