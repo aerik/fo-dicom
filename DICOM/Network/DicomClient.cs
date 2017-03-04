@@ -418,11 +418,6 @@ namespace Dicom.Network
 
                 await completeNotifier.Task.ConfigureAwait(false);
             }
-            catch (DicomAssociationRejectedException ar)
-            {
-                Logger.Warn("Failed to send due to: {@error}", ar);
-                //throw;
-            }
             catch (Exception e)
             {
                 Logger.Error("Failed to send due to: {@error}", e);
@@ -653,7 +648,7 @@ namespace Dicom.Network
             {
                 if (IsConnected)
                 {
-                    CancelAndSendAbort(DicomAbortSource.ServiceUser, DicomAbortReason.NotSpecified);
+                    SendAbort(DicomAbortSource.ServiceUser, DicomAbortReason.NotSpecified);
                 }
             }
 

@@ -1157,30 +1157,6 @@ namespace Dicom.Network
             this.SendPDUAsync(new AAbort(source, reason)).Wait();
         }
 
-        /// <summary>
-        /// Clears queues and aborts
-        /// Aerik Sylvan 20170301
-        /// </summary>
-        /// <param name="source"></param>
-        /// <param name="reason"></param>
-        protected void CancelAndSendAbort(DicomAbortSource source, DicomAbortReason reason)
-        {
-            Logger.Info("{logId} -> Cancel and Abort [source: {source}; reason: {reason}]", LogID, source, reason);
-            lock (_lock)
-            {
-                while(_pduQueue.Count > 0)
-                {
-                    _pduQueue.Dequeue();
-                }
-                while(_msgQueue.Count > 0)
-                {
-                    _msgQueue.Dequeue();
-                }
-                //pending?
-            }
-            this.SendPDUAsync(new AAbort(source, reason)).Wait();
-        }
-
         #endregion
 
         #region Override Methods
