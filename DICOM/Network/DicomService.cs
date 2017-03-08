@@ -276,7 +276,7 @@ namespace Dicom.Network
                 catch (IOException e)
                 {
                     LogIOException(e, Logger, false);
-                    TryCloseConnection(e);
+                    TryCloseConnection(e, true);
                 }
                 catch (Exception e)
                 {
@@ -1031,7 +1031,7 @@ namespace Dicom.Network
             }
         }
 
-        private bool TryCloseConnection(Exception exception = null)
+        private bool TryCloseConnection(Exception exception = null, bool forceClose = false)
         {
             try
             {
@@ -1046,8 +1046,17 @@ namespace Dicom.Network
                             _pduQueue.Count,
                             _msgQueue.Count,
                             _pending.Count);
+                        if (forceClose)
+                        {
+                            _pduQueue.Clear();
+                            _msgQueue.Clear();
+                            _pending.Clear();
+                        }
+                        else
+                        {
                         return false;
                     }
+                }
                 }
 
                 (this as IDicomService)?.OnConnectionClosed(exception);
