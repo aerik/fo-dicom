@@ -90,8 +90,14 @@
   </PropertyGroup>
   <ItemGroup>
     <!--A reference to the entire .Net Framework and Windows SDK are automatically included-->
-    <Content Include="..\Test Data\GH364.dcm">
+    <Content Include="..\Desktop\Test Data\GH364.dcm">
       <Link>Data\GH364.dcm</Link>
+    </Content>
+    <Content Include="..\Desktop\Test Data\CT-MONO2-16-ankle">
+      <Link>Data\CT-MONO2-16-ankle</Link>
+    </Content>
+    <Content Include="..\Desktop\Test Data\CT1_J2KI">
+      <Link>Data\CT1_J2KI</Link>
     </Content>
     <None Include="project.json" />
     <SDKReference Include="TestPlatform.Universal, Version=$(UnitTestPlatformVersion)" />
@@ -99,6 +105,9 @@
   <ItemGroup>
     <Compile Include="..\..\SharedAssemblyInfo.cs">
       <Link>Properties\SharedAssemblyInfo.cs</Link>
+    </Compile>
+    <Compile Include="..\Desktop\DicomAnonymizerTest.cs">
+      <Link>DicomAnonymizerTest.cs</Link>
     </Compile>
     <Compile Include="Bugs\GH435.cs" />
     <Compile Include="Helpers\ApplicationContent.cs" />
@@ -130,13 +139,13 @@
     <Content Include="Assets\Wide310x150Logo.scale-200.png" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\DICOM.Platform\Windows\DICOM.Universal.csproj">
+    <Service Include="{82A7F48D-3B50-4B1E-B82E-3ADA8210C358}" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\Platform\Universal\DICOM.Universal.csproj">
       <Project>{f3120ac1-b538-4a30-b4a8-835376737ef5}</Project>
       <Name>DICOM.Universal</Name>
     </ProjectReference>
-  </ItemGroup>
-  <ItemGroup>
-    <Service Include="{82A7F48D-3B50-4B1E-B82E-3ADA8210C358}" />
   </ItemGroup>
   <PropertyGroup Condition=" '$(VisualStudioVersion)' == '' or '$(VisualStudioVersion)' &lt; '14.0' ">
     <VisualStudioVersion>14.0</VisualStudioVersion>
