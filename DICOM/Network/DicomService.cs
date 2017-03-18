@@ -151,13 +151,13 @@ namespace Dicom.Network
         {
             if (_disposed) return;
 
+            IsConnected = false;
             if (disposing)
             {
                 _dimseStream?.Dispose();
                 _network?.Dispose();
                 _pduQueueWatcher?.Dispose();
             }
-
             _disposed = true;
         }
 
@@ -231,6 +231,8 @@ namespace Dicom.Network
         /// <returns>Awaitable task.</returns>
         protected async Task SendPDUAsync(PDU pdu)
         {
+            if (!IsConnected) return;
+            //if (_disposed) return;
             _pduQueueWatcher.Wait();
 
             lock (_lock)
@@ -272,6 +274,18 @@ namespace Dicom.Network
                 try
                 {
                     await _network.AsStream().WriteAsync(buffer, 0, (int)ms.Length).ConfigureAwait(false);
+                }
+                catch (ObjectDisposedException)
+                {
+                    // silently ignore
+                    Logger.Warn("Object disposed while writing");
+                    TryCloseConnection(force: true);
+                }
+                catch (NullReferenceException)
+                {
+                    // connection already closed; silently ignore
+                    Logger.Warn("Null reference while writing");
+                    TryCloseConnection(force: true);
                 }
                 catch (IOException e)
                 {
@@ -449,22 +463,23 @@ namespace Dicom.Network
                     }
                 }
             }
-            catch (DicomNetworkException e)
+            catch (ObjectDisposedException)
             {
-                Logger.Error("Exception processing PDU: {@error}", e);
-                TryCloseConnection(e);
+                // silently ignore
+                Logger.Warn("Object disposed while reading");
+                TryCloseConnection(force: true);
+            }
+            catch (NullReferenceException)
+            {
+                // connection already closed; silently ignore
+                Logger.Warn("Null reference while reading");
+                TryCloseConnection(force: true);
             }
             catch (IOException e)
             {
-                if (LogIOException(e, Logger, true))
-                {
-                    // Underlying socket error, probably due to forcibly closed connection, ignore
-                    TryCloseConnection();
-                }
-                else
-                {
-                    TryCloseConnection(e);
-                }
+                // LogIOException returns true for underlying socket error (probably due to forcibly closed connection), 
+                // in that case discard exception
+                TryCloseConnection(LogIOException(e, Logger, true) ? null : e, true);
             }
             catch (Exception e)
             {
@@ -1029,7 +1044,7 @@ namespace Dicom.Network
             }
         }
 
-        private bool TryCloseConnection(Exception exception = null, bool forceClose = false)
+        private bool TryCloseConnection(Exception exception = null, bool force = false)
         {
             try
             {
@@ -1037,6 +1052,14 @@ namespace Dicom.Network
 
                 lock (_lock)
                 {
+                    if (force)
+                    {
+                        _pduQueue.Clear();
+                        _msgQueue.Clear();
+                        _pending.Clear();
+                        _pduQueueWatcher.Set();
+                    }
+
                     if (_pduQueue.Count > 0 || _msgQueue.Count > 0 || _pending.Count > 0)
                     {
                         Logger.Info(
@@ -1044,38 +1067,23 @@ namespace Dicom.Network
                             _pduQueue.Count,
                             _msgQueue.Count,
                             _pending.Count);
-                        if (forceClose)
-                        {
-                            _pduQueue.Clear();
-                            _msgQueue.Clear();
-                            _pending.Clear();
-                        }
-                        else
-                        {
                             return false;
                         }
                     }
-                }
 
                 (this as IDicomService)?.OnConnectionClosed(exception);
                 lock (_lock) IsConnected = false;
+
+                Logger.Info("Connection closed");
+
+                if (exception != null) throw exception;
+                return true;
             }
             catch (Exception e)
             {
-                if (exception == null)
-                {
-                    exception = e;
-                }
+                Logger.Error("Error during close attempt: {@error}", e);
+                throw;
             }
-
-            if (exception != null)
-            {
-                Logger.Error("Connection closed with error: {@error}", exception);
-                throw exception;
-            }
-
-            Logger.Info("Connection closed");
-            return true;
         }
 
         #endregion
@@ -1162,6 +1170,9 @@ namespace Dicom.Network
         /// <param name="reason">Abort reason.</param>
         protected void SendAbort(DicomAbortSource source, DicomAbortReason reason)
         {
+            _pduQueue.Clear();
+            _msgQueue.Clear();
+            _pending.Clear();
             Logger.Info("{logId} -> Abort [source: {source}; reason: {reason}]", LogID, source, reason);
             this.SendPDUAsync(new AAbort(source, reason)).Wait();
         }
