@@ -370,7 +370,6 @@ namespace Dicom.Network
         public void Abort()
         {
             if (this.aborted) return;
-
             this.service?.DoSendAbort();
             this.aborted = true;
 

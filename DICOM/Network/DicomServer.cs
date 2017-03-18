@@ -201,9 +201,10 @@ namespace Dicom.Network
                 while (!this.cancellationSource.IsCancellationRequested)
                 {
                     var networkStream =
-                        await
-                        listener.AcceptNetworkStreamAsync(this.certificateName, noDelay, this.cancellationSource.Token)
-                            .ConfigureAwait(false);
+                        await listener.AcceptNetworkStreamAsync(
+                            this.certificateName,
+                            noDelay,
+                            this.cancellationSource.Token).ConfigureAwait(false);
 
                     if (networkStream != null)
                     {
