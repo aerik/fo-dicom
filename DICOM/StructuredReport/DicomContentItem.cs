@@ -286,7 +286,7 @@ namespace Dicom.StructuredReport
         {
             get
             {
-                var type = Dataset.Get<string>(DicomTag.RelationshipType, 0, "UNKNOWN");
+                var type = Dataset.Get<string>(DicomTag.RelationshipType, 0, "UNKNOWN").ToUpper();
                 switch (type)
                 {
                     case "CONTAINS":

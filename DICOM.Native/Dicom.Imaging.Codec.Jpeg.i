@@ -488,8 +488,10 @@ void JPEGCODEC::Decode(DicomPixelData^ oldPixelData, DicomPixelData^ newPixelDat
         frameArray = gcnew PinnedByteArray(frameSize);
         unsigned char* framePtr = (unsigned char*)(void*)frameArray->Pointer;
 
-        while (dinfo.output_scanline < dinfo.output_height) {
-            int rows = jpeg_read_scanlines(&dinfo, (JSAMPARRAY)&framePtr, 1);
+		// fix for not spinning cpu on corrupt file
+		int rows = 1;
+        while (dinfo.output_scanline < dinfo.output_height && rows > 0) {
+            rows = jpeg_read_scanlines(&dinfo, (JSAMPARRAY)&framePtr, 1);
             framePtr += rows * rowSize;
         }
 
