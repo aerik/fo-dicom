@@ -18,6 +18,8 @@ namespace Dicom {
 			public:
 				DicomJpegLsCodecException(CharlsApiResultType error) : DicomCodecException(GetErrorMessage(error)) {
 				}
+				DicomJpegLsCodecException(CharlsApiResultType error, System::String^ msg) : DicomCodecException(GetErrorMessage(error) + ": " + msg) {
+				}
 
 			private:
 				static String^ GetErrorMessage(CharlsApiResultType error) {
@@ -40,6 +42,8 @@ namespace Dicom {
 						return "Unsupported bit depth for transform";
 					case CharlsApiResultType::UnsupportedColorTransform:
 						return "Unsupported color transform";
+					case CharlsApiResultType::UnspecifiedFailure:
+						return "Processing failure";
 					default:
 						return "Unknown error";
 					}
@@ -87,7 +91,10 @@ namespace Dicom {
 
 					char errorMessage[256];
 					CharlsApiResultType err = JpegLsEncode((void*)jpegArray->Pointer, jpegArray->Count, &jpegDataSize, (void*)frameArray->Pointer, frameArray->Count, &params, errorMessage);
-					if (err != CharlsApiResultType::OK) throw gcnew DicomJpegLsCodecException(err);
+					if (err != CharlsApiResultType::OK) {
+						throw gcnew DicomJpegLsCodecException(err, gcnew System::String(errorMessage));
+						//throw gcnew DicomJpegLsCodecException(err);
+					}
 
 					Array::Resize(jpegData, (int)jpegDataSize);
 

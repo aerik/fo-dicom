@@ -10,6 +10,7 @@ using namespace System;
 using namespace System::ComponentModel::Composition;
 
 using namespace Dicom;
+using namespace Dicom::IO::Buffer;
 using namespace Dicom::Imaging;
 
 namespace Dicom {

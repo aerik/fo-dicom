@@ -127,6 +127,10 @@ CHARLS_IMEXPORT(ApiResult) JpegLsEncodeStream(ByteStreamInfo compressedStreamInf
         CopyWhatTextToErrorMessage(e, errorMessage);
         return SystemErrorToCharLSError(e);
     }
+	catch (const std::exception& x) {
+		strcpy(errorMessage, x.what());
+		return ApiResult::UnspecifiedFailure;
+	}
     catch (...)
     {
         ClearErrorMessage(errorMessage);
