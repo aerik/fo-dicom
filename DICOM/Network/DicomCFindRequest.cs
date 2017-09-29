@@ -255,6 +255,7 @@ namespace Dicom.Network
             sps.Add(DicomTag.RequestedContrastAgent, string.Empty);
             sps.Add(DicomTag.PreMedication, string.Empty);
             sps.Add(DicomTag.AnatomicalOrientationType, string.Empty);
+            //sps.Add(DicomTag.ScheduledProcedureStepStatus, "REQUESTED");
             dimse.Dataset.Add(new DicomSequence(DicomTag.ScheduledProcedureStepSequence, sps));
 
             return dimse;

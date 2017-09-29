@@ -486,6 +486,11 @@ namespace Dicom.Dump
             ChangeSyntax(DicomTransferSyntax.JPEGLSNearLossless, new DicomJpegLsParams { AllowedError = 10 });
         }
 
+        private void error20ToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            ChangeSyntax(DicomTransferSyntax.JPEGLSNearLossless, new DicomJpegLsParams { AllowedError = 20 });
+        }
+
         private void OnClickRLELossless(object sender, EventArgs e)
         {
             ChangeSyntax(DicomTransferSyntax.RLELossless);
@@ -535,5 +540,6 @@ namespace Dicom.Dump
                 e.Effect = DragDropEffects.None;
             }
         }
+
     }
 }
