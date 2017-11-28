@@ -379,7 +379,14 @@ namespace Dicom.Network
                                 var pdu = new AAssociateRQ(Association);
                                 pdu.Read(raw);
                                 LogID = Association.CallingAE;
-                                if (Options.UseRemoteAEForLogName) Logger = LogManager.GetLogger(LogID);
+                                if (Options.UseRemoteAEForLogName)
+                                {
+                                    Logger = LogManager.GetLogger(LogID);
+                                }
+                                else
+                                {
+                                    Logger = LogManager.GetLogger(Association.CalledAE);
+                                }
                                 Logger.Info(
                                     "{callingAE} <- Association request:\n{association}",
                                     LogID,
