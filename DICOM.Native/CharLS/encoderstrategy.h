@@ -85,14 +85,13 @@ protected:
             _valcurrent = _valcurrent | (value << _bitpos);
             return;
 		}
-		else {
-			//error?
-			throw std::exception("_bitpos less than zero");
-			//throw std::system_error(EFAULT, std::system_category());
-		}
         _valcurrent |= value >> -_bitpos;
 
         Flush();
+		if (_bitpos < 0) {
+			//error?
+			throw std::exception("_bitpos less than zero");
+		}
 
         ASSERT(_bitpos >=0);
         _valcurrent |= value << _bitpos;
