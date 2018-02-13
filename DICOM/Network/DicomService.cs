@@ -292,6 +292,20 @@ namespace Dicom.Network
                     LogIOException(e, Logger, false);
                     TryCloseConnection(e, true);
                 }
+                catch (AggregateException ax)
+                {
+                    Exception be = ax.GetBaseException();
+                    if (be is IOException)
+                    {
+                        LogIOException((be as IOException), Logger, false);
+                        TryCloseConnection(be, true);
+                    }
+                    else
+                    {
+                        Logger.Error("AggregateException sending PDU: {@error}", ax);
+                        TryCloseConnection(ax);
+                    }
+                }
                 catch (Exception e)
                 {
                     Logger.Error("Exception sending PDU: {@error}", e);
@@ -1082,8 +1096,8 @@ namespace Dicom.Network
                 lock (_lock) IsConnected = false;
 
                 Logger.Info("Connection closed");
-
-                if (exception != null) throw exception;
+                //throwing here just bubbles out... why do that?
+                //if (exception != null) throw exception;
                 return true;
             }
             catch (Exception e)

@@ -20,6 +20,8 @@ namespace Dicom.Network
 
         private X509Certificate certificate = null;
 
+        private readonly int _Port;
+
         #endregion
 
         #region CONSTRUCTORS
@@ -32,6 +34,7 @@ namespace Dicom.Network
         /// </param>
         internal DesktopNetworkListener(int port)
         {
+            _Port = port;
             this.listener = new TcpListener(IPAddress.Any, port);
         }
 
@@ -95,6 +98,13 @@ namespace Dicom.Network
             {
                 return null;
             }
+            catch(SocketException sx)
+            {
+                var logger = Dicom.Log.LogManager.GetLogger("DicomServer:" + _Port.ToString());
+                logger.Error("Socket error:" + sx.ErrorCode.ToString() + ", " + sx.Message);
+                return null;
+            }
+            //There might be no SocketException - it could be an AggregateException... hmm...
         }
 
         /// <summary>
