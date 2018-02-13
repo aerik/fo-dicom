@@ -66,7 +66,11 @@ namespace Dicom.Network
                     case DicomCommandField.NSetRequest:
                     case DicomCommandField.NActionRequest:
                     case DicomCommandField.NDeleteRequest:
-                        return Command.Get<DicomUID>(DicomTag.RequestedSOPClassUID);
+                        //possibly deal with broken MPPS
+                        DicomUID nSopClass = null;
+                        nSopClass = Command.Get<DicomUID>(DicomTag.RequestedSOPClassUID,null);
+                        if(nSopClass == null) nSopClass = Command.Get<DicomUID>(DicomTag.AffectedSOPClassUID, null);
+                        return nSopClass;
                     case DicomCommandField.CStoreRequest:
                     case DicomCommandField.CFindRequest:
                     case DicomCommandField.CGetRequest:
