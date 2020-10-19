@@ -14,6 +14,7 @@ namespace Dicom
     using Dicom.IO;
     using Dicom.IO.Reader;
     using Dicom.IO.Writer;
+    using System.Collections.Generic;
 
     /// <summary>
     /// Container class for DICOM file parsing states.
@@ -41,6 +42,8 @@ namespace Dicom
     public class DicomFile
     {
         #region CONSTRUCTORS
+        //copied from DicomFileReader
+        private static readonly DicomTag FileMetaInfoStopTag = new DicomTag(0x0002, 0xffff);
 
         public DicomFile()
         {
@@ -523,6 +526,29 @@ namespace Dicom
             this.FileMetaInfo = this.Format == DicomFileFormat.DICOM3NoFileMetaInfo
                                     ? new DicomFileMetaInformation(this.Dataset)
                                     : new DicomFileMetaInformation(this.FileMetaInfo);
+
+            //make sure there are no duplicates between Dataset and FileMetaInfo
+            List<DicomTag> toDelete = new List<DicomTag>();
+            foreach(DicomItem item in this.Dataset)
+            {
+                if(item.Tag.CompareTo(FileMetaInfoStopTag) < 0)
+                {
+                    //use the dataset value if it's not empty
+                    if (!String.IsNullOrEmpty(this.Dataset.Get<string>(item.Tag, -1, null)))
+                    {
+                        this.FileMetaInfo.AddOrUpdate(item);
+                    }
+                    if (!toDelete.Contains(item.Tag)) toDelete.Add(item.Tag);
+                }
+                else
+                {
+                    break;
+                }
+            }
+            foreach(DicomTag tag in toDelete)
+            {
+                this.Dataset.Remove(tag);
+            }
         }
 
         #endregion

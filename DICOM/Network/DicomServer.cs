@@ -190,11 +190,12 @@ namespace Dicom.Network
         /// </summary>
         private async Task ListenAsync()
         {
+            INetworkListener listener = null;
             try
             {
                 var noDelay = this.Options?.TcpNoDelay ?? DicomServiceOptions.Default.TcpNoDelay;
 
-                var listener = NetworkManager.CreateNetworkListener(this.Port);
+                listener = NetworkManager.CreateNetworkListener(this.Port);
                 await listener.StartAsync().ConfigureAwait(false);
                 this.IsListening = true;
 
@@ -213,7 +214,6 @@ namespace Dicom.Network
                         {
                             scp.Options = this.Options;
                         }
-
                         this.clients.Add(scp);
                     }
                 }
@@ -225,17 +225,21 @@ namespace Dicom.Network
             catch (OperationCanceledException)
             {
                 this.Logger.Info("Listening manually terminated");
-
-                this.IsListening = false;
                 this.Exception = null;
             }
             catch (Exception e)
             {
                 this.Logger.Error("Exception listening for clients, {@error}", e);
-
                 this.Stop();
-                this.IsListening = false;
                 this.Exception = e;
+            }
+            finally
+            {
+                if(listener != null)
+                {
+                    listener.Stop();
+                }
+                this.IsListening = false;
             }
         }
 

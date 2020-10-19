@@ -20,6 +20,8 @@ namespace Dicom.Network
 
         private X509Certificate certificate = null;
 
+        private readonly int _Port;
+
         #endregion
 
         #region CONSTRUCTORS
@@ -32,6 +34,7 @@ namespace Dicom.Network
         /// </param>
         internal DesktopNetworkListener(int port)
         {
+            _Port = port;
             this.listener = new TcpListener(IPAddress.Any, port);
         }
 
@@ -91,7 +94,7 @@ namespace Dicom.Network
 
                 return null;
             }
-            catch (TaskCanceledException)
+            catch
             {
                 return null;
             }

@@ -183,7 +183,7 @@ namespace Dicom.StructuredReport
         {
             get
             {
-                return Dataset.Get<DicomCodeItem>(DicomTag.ConceptNameCodeSequence);
+                return Dataset.Get<DicomCodeItem>(DicomTag.ConceptNameCodeSequence, null);
             }
             private set
             {

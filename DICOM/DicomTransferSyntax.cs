@@ -148,7 +148,7 @@ namespace Dicom
                                                                  Endian = Endian.Little
                                                              };
 
-        /// <summary>JPEG Extended (Process 2 &amp; 4)</summary>
+        /// <summary>JPEG Extended (Process 2 &amp; 4): Default Transfer Syntax for Lossy JPEG 12 Bit Image Compression (Process 4 only)</summary>
         public static DicomTransferSyntax JPEGProcess2_4 = new DicomTransferSyntax
                                                                {
                                                                    UID = DicomUID.JPEGExtended24,
@@ -372,7 +372,7 @@ namespace Dicom
                                                                          Endian = Endian.Little
                                                                      };
 
-        /// <summary>JPEG Lossless, Non-Hierarchical, First-Order Prediction (Process 14 [Selection Value 1])</summary>
+        /// <summary>JPEG Lossless, Non-Hierarchical, First-Order Prediction (Process 14 [Selection Value 1]): Default Transfer Syntax for Lossless JPEG Image Compression</summary>
         public static DicomTransferSyntax JPEGProcess14SV1 = new DicomTransferSyntax
                                                                  {
                                                                      UID = DicomUID.JPEGLossless,

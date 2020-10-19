@@ -64,6 +64,16 @@ namespace Dicom.Network
         /// <summary>
         /// Gets the remote port.
         /// </summary>
+        public int LocalPort { get; internal set; }
+
+        /// <summary>
+        /// Gets the remote host.
+        /// </summary>
+        public string LocalHost { get; internal set; }
+
+        /// <summary>
+        /// Gets the remote port.
+        /// </summary>
         public int RemotePort { get; internal set; }
 
         /// <summary>
@@ -107,8 +117,8 @@ namespace Dicom.Network
             sb.AppendFormat("Remote port:            {0}\n", RemotePort);
             sb.AppendFormat(
                 "Implementation Class:   {0}\n",
-                this.RemoteImplementationClassUID ?? DicomImplementation.ClassUID);
-            sb.AppendFormat("Implementation Version: {0}\n", RemoteImplementationVersion ?? DicomImplementation.Version);
+                this.RemoteImplementationClassUID ?? new DicomUID("0.000", "Implementation Class UID", DicomUidType.Unknown));
+            sb.AppendFormat("Implementation Version: {0}\n", RemoteImplementationVersion ?? "(blank)");
             sb.AppendFormat("Maximum PDU Length:     {0}\n", MaximumPDULength);
             sb.AppendFormat("Async Ops Invoked:      {0}\n", MaxAsyncOpsInvoked);
             sb.AppendFormat("Async Ops Performed:    {0}\n", MaxAsyncOpsPerformed);

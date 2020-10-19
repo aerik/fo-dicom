@@ -237,7 +237,7 @@ namespace Dicom.IO
         #region Public Constructors
 
         public EndianBinaryReader(Stream input)
-            : base(input)
+            : base(input, DicomEncoding.Default)
         {
         }
 
@@ -247,7 +247,7 @@ namespace Dicom.IO
         }
 
         public EndianBinaryReader(Stream input, Endian endian)
-            : base(input)
+            : base(input, DicomEncoding.Default)
         {
             Endian = endian;
         }
@@ -267,7 +267,7 @@ namespace Dicom.IO
             {
                 if (Endian.Little == endian)
                 {
-                    return new BinaryReader(input);
+                    return new BinaryReader(input,DicomEncoding.Default);
                 }
                 else
                 {
@@ -278,7 +278,7 @@ namespace Dicom.IO
             {
                 if (Endian.Big == endian)
                 {
-                    return new BinaryReader(input);
+                    return new BinaryReader(input, DicomEncoding.Default);
                 }
                 else
                 {

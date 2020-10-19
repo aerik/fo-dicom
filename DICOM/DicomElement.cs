@@ -29,6 +29,9 @@ namespace Dicom
 
         public IByteBuffer Buffer { get; protected set; }
 
+        //OPTIONAL stream position of element, Aerik
+        public long StreamPosition { get; internal set; }
+
         public uint Length
         {
             get

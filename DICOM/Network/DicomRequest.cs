@@ -10,11 +10,16 @@ namespace Dicom.Network
     /// </summary>
     public abstract class DicomRequest : DicomMessage
     {
+        public delegate void RequestDelegate();
+
         #region FIELDS
 
         private static volatile ushort _messageId = 1;
 
         private static readonly object _lock = new object();
+
+        /// <summary>Delegate to be executed immediately before sending the request.</summary>
+        public RequestDelegate OnBeforeSendRequest;
 
         #endregion
 

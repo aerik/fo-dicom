@@ -29,7 +29,10 @@ namespace Dicom
         {
             this.Version = new byte[] { 0x00, 0x01 };
 
-            this.MediaStorageSOPClassUID = dataset.Get<DicomUID>(DicomTag.SOPClassUID);
+            if (dataset.Contains(DicomTag.SOPClassUID))
+            {
+                this.MediaStorageSOPClassUID = dataset.Get<DicomUID>(DicomTag.SOPClassUID);
+            }
             this.MediaStorageSOPInstanceUID = dataset.Get<DicomUID>(DicomTag.SOPInstanceUID);
             this.TransferSyntax = dataset.InternalTransferSyntax;
 
@@ -38,6 +41,15 @@ namespace Dicom
 
             var aet = CreateSourceApplicationEntityTitle();
             if (aet != null) this.SourceApplicationEntityTitle = aet;
+
+            if (dataset.Contains(DicomTag.SendingApplicationEntityTitle))
+                SendingApplicationEntityTitle = dataset.Get<string>(DicomTag.SendingApplicationEntityTitle,0,"");
+            if (dataset.Contains(DicomTag.ReceivingApplicationEntityTitle))
+                ReceivingApplicationEntityTitle = dataset.Get<string>(DicomTag.ReceivingApplicationEntityTitle, 0, "");
+            if (dataset.Contains(DicomTag.PrivateInformationCreatorUID))
+                PrivateInformationCreatorUID = dataset.Get<DicomUID>(DicomTag.PrivateInformationCreatorUID);
+            if (dataset.Contains(DicomTag.PrivateInformation))
+                PrivateInformation = dataset.Get<byte[]>(DicomTag.PrivateInformation);
         }
 
         /// <summary>
@@ -57,6 +69,15 @@ namespace Dicom
 
             var aet = CreateSourceApplicationEntityTitle();
             if (aet != null) this.SourceApplicationEntityTitle = aet;
+
+            if (metaInfo.Contains(DicomTag.SendingApplicationEntityTitle))
+                SendingApplicationEntityTitle = metaInfo.SendingApplicationEntityTitle;
+            if (metaInfo.Contains(DicomTag.ReceivingApplicationEntityTitle))
+                ReceivingApplicationEntityTitle = metaInfo.ReceivingApplicationEntityTitle;
+            if (metaInfo.Contains(DicomTag.PrivateInformationCreatorUID))
+                PrivateInformationCreatorUID = metaInfo.PrivateInformationCreatorUID;
+            if (metaInfo.Contains(DicomTag.PrivateInformation))
+                PrivateInformation = metaInfo.PrivateInformation;
         }
 
         #endregion
@@ -85,7 +106,14 @@ namespace Dicom
         {
             get
             {
-                return Get<DicomUID>(DicomTag.MediaStorageSOPClassUID);
+                if (this.Contains(DicomTag.MediaStorageSOPClassUID))
+                {
+                    return Get<DicomUID>(DicomTag.MediaStorageSOPClassUID);
+                }
+                else
+                {
+                    return null;
+                }
             }
             set
             {
@@ -165,6 +193,68 @@ namespace Dicom
             set
             {
                 AddOrUpdate(DicomTag.SourceApplicationEntityTitle, value);
+            }
+        }
+
+
+        /// <summary>
+        /// Gets or sets the Sending Application Entity Title.
+        /// </summary>
+        public string SendingApplicationEntityTitle
+        {
+            get
+            {
+                return Get<string>(DicomTag.SendingApplicationEntityTitle, null);
+            }
+            set
+            {
+                AddOrUpdate(DicomTag.SendingApplicationEntityTitle, value);
+            }
+        }
+
+        /// <summary>
+        /// Gets or sets the Receiving Application Entity Title (optional attribute).
+        /// </summary>
+        public string ReceivingApplicationEntityTitle
+        {
+            get
+            {
+                return Get<string>(DicomTag.ReceivingApplicationEntityTitle, null);
+            }
+            set
+            {
+                AddOrUpdate(DicomTag.ReceivingApplicationEntityTitle, value);
+            }
+        }
+
+        /// <summary>
+        /// Gets or sets the Private Information Creator UID (optional attribute).
+        /// </summary>
+        public DicomUID PrivateInformationCreatorUID
+        {
+            get
+            {
+                return Get<DicomUID>(DicomTag.PrivateInformationCreatorUID, null);
+            }
+            set
+            {
+                AddOrUpdate(DicomTag.PrivateInformationCreatorUID, value);
+            }
+        }
+
+        /// <summary>
+        /// Gets or sets the private information associated with <see cref="PrivateInformationCreatorUID"/>.
+        /// Required if <see cref="PrivateInformationCreatorUID"/> is defined.
+        /// </summary>
+        public byte[] PrivateInformation
+        {
+            get
+            {
+                return Get<byte[]>(DicomTag.PrivateInformation, null);
+            }
+            set
+            {
+                AddOrUpdate(DicomTag.PrivateInformation, value);
             }
         }
 

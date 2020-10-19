@@ -85,6 +85,14 @@ namespace Dicom.Network
 
         #endregion
 
+        internal long StreamPosition
+        {
+            get
+            {
+                return _ms.Position;
+            }
+        }
+
         #region Public Methods
 
         /// <summary>
@@ -142,9 +150,9 @@ namespace Dicom.Network
         /// <summary>
         /// Reset PDU read stream
         /// </summary>
-        public void Reset()
+        public void Reset(long offset=0)
         {
-            _ms.Seek(0, SeekOrigin.Begin);
+            _ms.Seek(offset, SeekOrigin.Begin);
         }
 
         #region Read Methods
@@ -547,7 +555,7 @@ namespace Dicom.Network
         {
             uint l = raw.Length - 6;
 
-            raw.ReadUInt16("Version");
+            ushort protocolVersion = raw.ReadUInt16("Version");
             raw.SkipBytes("Reserved", 2);
             _assoc.CalledAE = raw.ReadString("Called AE", 16);
             _assoc.CallingAE = raw.ReadString("Calling AE", 16);
@@ -559,6 +567,8 @@ namespace Dicom.Network
                 byte type = raw.ReadByte("Item-Type");
                 raw.SkipBytes("Reserved", 1);
                 ushort il = raw.ReadUInt16("Item-Length");
+                ushort originalItemLength = il;
+                long ilPos = raw.StreamPosition;
 
                 l -= 4 + (uint)il;
 
@@ -571,26 +581,35 @@ namespace Dicom.Network
                 {
                     // Presentation Context
                     byte id = raw.ReadByte("Presentation Context ID");
-                    raw.SkipBytes("Reserved", 3);
-                    il -= 4;
-
-                    while (il > 0)
+                    try
                     {
-                        byte pt = raw.ReadByte("Presentation Context Item-Type");
-                        raw.SkipBytes("Reserved", 1);
-                        ushort pl = raw.ReadUInt16("Presentation Context Item-Length");
-                        string sx = raw.ReadString("Presentation Context Syntax UID", pl);
-                        if (pt == 0x30)
+                        raw.SkipBytes("Reserved", 3);
+                        il -= 4;
+
+                        while (il > 0)
                         {
-                            var pc = new DicomPresentationContext(id, DicomUID.Parse(sx));
-                            _assoc.PresentationContexts.Add(pc);
+                            byte pt = raw.ReadByte("Presentation Context Item-Type");
+                            raw.SkipBytes("Reserved", 1);
+                            ushort pl = raw.ReadUInt16("Presentation Context Item-Length");
+                            string sx = raw.ReadString("Presentation Context Syntax UID", pl);
+                            if (pt == 0x30)
+                            {
+                                var pc = new DicomPresentationContext(id, DicomUID.Parse(sx));
+                                _assoc.PresentationContexts.Add(pc);
+                            }
+                            else if (pt == 0x40)
+                            {
+                                var pc = _assoc.PresentationContexts[id];
+                                pc.AddTransferSyntax(DicomTransferSyntax.Parse(sx));
+                            }
+                            il -= (ushort)(4 + pl);
                         }
-                        else if (pt == 0x40)
-                        {
-                            var pc = _assoc.PresentationContexts[id];
-                            pc.AddTransferSyntax(DicomTransferSyntax.Parse(sx));
-                        }
-                        il -= (ushort)(4 + pl);
+                    }
+                    catch(DicomException dx)
+                    {
+                        var pc = new DicomPresentationContext(id, DicomUID.Parse("error"));
+                        _assoc.PresentationContexts.Add(pc);
+                        raw.Reset(ilPos + originalItemLength);
                     }
                 }
                 else if (type == 0x50)
@@ -799,7 +818,7 @@ namespace Dicom.Network
             uint l = raw.Length - 6;
             ushort c = 0;
 
-            raw.ReadUInt16("Version");
+            ushort protocolVersion = raw.ReadUInt16("Version");
             raw.SkipBytes("Reserved", 2);
             raw.SkipBytes("Reserved", 16);
             raw.SkipBytes("Reserved", 16);

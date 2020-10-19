@@ -50,7 +50,7 @@ namespace Dicom.Network
         /// <param name="file">DICOM file to be sent</param>
         /// <param name="priority">Priority of request</param>
         public DicomCStoreRequest(DicomFile file, DicomPriority priority = DicomPriority.Medium)
-            : base(DicomCommandField.CStoreRequest, file.Dataset.Get<DicomUID>(DicomTag.SOPClassUID), priority)
+            : base(DicomCommandField.CStoreRequest, file.FileMetaInfo.MediaStorageSOPClassUID, priority)
         {
             File = file;
             Dataset = file.Dataset;

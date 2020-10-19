@@ -100,6 +100,23 @@ namespace Dicom.Network
             }
         }
 
+        public DicomAssociation Association
+        {
+            get
+            {
+                if (service != null) return service.Association;
+                return null;
+            }
+        }
+        public bool IsConnected
+        {
+            get
+            {
+                if (service != null) return service.IsConnected;
+                return false;
+            }
+        }
+
         /// <summary>
         /// Gets or sets options to control behavior of <see cref="DicomService"/> base class.
         /// </summary>
@@ -218,6 +235,21 @@ namespace Dicom.Network
         /// <returns>Awaitable task.</returns>
         public Task SendAsync(string host, int port, bool useTls, string callingAe, string calledAe)
         {
+            return SendAsync(host, port, useTls, callingAe, calledAe, CancellationToken.None);
+        }
+
+        /// <summary>
+        /// Asynchonously send existing requests to DICOM service.
+        /// </summary>
+        /// <param name="host">DICOM host.</param>
+        /// <param name="port">Port.</param>
+        /// <param name="useTls">True if TLS security should be enabled, false otherwise.</param>
+        /// <param name="callingAe">Calling Application Entity Title.</param>
+        /// <param name="calledAe">Called Application Entity Title.</param>
+        /// <param name="cancelTok">When cancelled, stops after the next request is sent</param>
+        /// <returns>Awaitable task.</returns>
+        public Task SendAsync(string host, int port, bool useTls, string callingAe, string calledAe, CancellationToken cancelTok)
+        {
             if (!CanSend) Task.FromResult(false);   // TODO Replace with Task.CompletedTask when moving to .NET 4.6
 
             var noDelay = Options?.TcpNoDelay ?? DicomServiceOptions.Default.TcpNoDelay;
@@ -234,7 +266,7 @@ namespace Dicom.Network
                 RemotePort = port
             };
 
-            return DoSendAsync(this.networkStream, assoc);
+            return DoSendAsync(this.networkStream, assoc, cancelTok);
         }
 
         /// <summary>
@@ -378,6 +410,11 @@ namespace Dicom.Network
 
         private async Task DoSendAsync(INetworkStream stream, DicomAssociation association)
         {
+            await DoSendAsync(stream, association, CancellationToken.None);
+        }
+
+        private async Task DoSendAsync(INetworkStream stream, DicomAssociation association, CancellationToken cancelTok)
+        {
             try
             {
                 if (service == null || !service.IsConnected)
@@ -407,7 +444,15 @@ namespace Dicom.Network
 
                     foreach (var request in copy)
                     {
-                        service.SendRequest(request);
+                        if (!cancelTok.IsCancellationRequested) //is always false for CancellationToken.None
+                        {
+                            service.SendRequest(request);
+                        }
+                        else
+                        {
+                            Logger.Warn("Cancelled sending requests");
+                            break;
+                        }
                     }
                 }
                 else if (associated)
@@ -509,7 +554,6 @@ namespace Dicom.Network
                 : base(stream, fallbackEncoding, log)
             {
                 this.client = client;
-
                 if (options != null)
                 {
                     Options = options;

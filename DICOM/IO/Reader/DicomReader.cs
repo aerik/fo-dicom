@@ -539,7 +539,11 @@ namespace Dicom.IO.Reader
                         var entry = this.dictionary[this._tag];
                         if (entry != null)
                         {
-                            this._vr = entry.ValueRepresentations.FirstOrDefault();
+                            var vr = entry.ValueRepresentations.FirstOrDefault();
+                            if (vr != DicomVR.SQ || this.length == UndefinedLength)
+                            {
+                                this._vr = vr;
+                            }
                         }
 
                         if (this._vr == null)

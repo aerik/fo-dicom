@@ -66,7 +66,11 @@ namespace Dicom.Network
                     case DicomCommandField.NSetRequest:
                     case DicomCommandField.NActionRequest:
                     case DicomCommandField.NDeleteRequest:
-                        return Command.Get<DicomUID>(DicomTag.RequestedSOPClassUID);
+                        //possibly deal with broken MPPS
+                        DicomUID nSopClass = null;
+                        nSopClass = Command.Get<DicomUID>(DicomTag.RequestedSOPClassUID,null);
+                        if(nSopClass == null) nSopClass = Command.Get<DicomUID>(DicomTag.AffectedSOPClassUID, null);
+                        return nSopClass;
                     case DicomCommandField.CStoreRequest:
                     case DicomCommandField.CFindRequest:
                     case DicomCommandField.CGetRequest:
@@ -150,25 +154,32 @@ namespace Dicom.Network
         public string ToString(bool printDatasets)
         {
             var output = new StringBuilder(ToString());
-
             if (!printDatasets) return output.ToString();
 
-            output.AppendLine();
-            output.AppendLine("--------------------------------------------------------------------------------");
-            output.AppendLine(" DIMSE Command:");
-            output.AppendLine("--------------------------------------------------------------------------------");
-            output.AppendLine(Command.WriteToString());
+            try
+            {
+                output.AppendLine();
+                output.AppendLine("--------------------------------------------------------------------------------");
+                output.AppendLine(" DIMSE Command:");
+                output.AppendLine("--------------------------------------------------------------------------------");
+                output.AppendLine(Command.WriteToString());
 
-            if (HasDataset)
+                if (HasDataset)
+                {
+                    output.AppendLine("--------------------------------------------------------------------------------");
+                    output.AppendLine(" DIMSE Dataset:");
+                    output.AppendLine("--------------------------------------------------------------------------------");
+                    output.AppendLine(Dataset.WriteToString());
+                }
+
+                output.AppendLine("--------------------------------------------------------------------------------");
+            }
+            catch (System.Exception x)
             {
                 output.AppendLine("--------------------------------------------------------------------------------");
-                output.AppendLine(" DIMSE Dataset:");
+                output.AppendLine(" *** Error dumping command or dataset: " +x.Message + " ***");
                 output.AppendLine("--------------------------------------------------------------------------------");
-                output.AppendLine(Dataset.WriteToString());
             }
-
-            output.AppendLine("--------------------------------------------------------------------------------");
-
             return output.ToString();
         }
 

@@ -147,6 +147,11 @@ namespace Dicom.IO.Reader
             }
 
             DicomDataset ds = _datasets.Peek();
+            element.StreamPosition = source.Position;
+            if (ds.Contains(element.Tag))
+            {
+                element.StreamPosition = -1;//a quick hack so we know something is wrong - Aerik
+            }
             ds.AddOrUpdate(element);
         }
 

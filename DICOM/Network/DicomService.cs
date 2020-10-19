@@ -292,6 +292,20 @@ namespace Dicom.Network
                     LogIOException(e, Logger, false);
                     TryCloseConnection(e, true);
                 }
+                catch (AggregateException ax)
+                {
+                    Exception be = ax.GetBaseException();
+                    if (be is IOException)
+                    {
+                        LogIOException((be as IOException), Logger, false);
+                        TryCloseConnection(be, true);
+                    }
+                    else
+                    {
+                        Logger.Error("AggregateException sending PDU: {@error}", ax);
+                        TryCloseConnection(ax);
+                    }
+                }
                 catch (Exception e)
                 {
                     Logger.Error("Exception sending PDU: {@error}", e);
@@ -374,7 +388,9 @@ namespace Dicom.Network
                                 Association = new DicomAssociation
                                                   {
                                                       RemoteHost = _network.RemoteHost,
-                                                      RemotePort = _network.RemotePort
+                                                      RemotePort = _network.RemotePort,
+                                                      LocalHost = _network.LocalHost,
+                                                      LocalPort = _network.LocalPort
                                                   };
                                 var pdu = new AAssociateRQ(Association);
                                 pdu.Read(raw);
@@ -938,6 +954,7 @@ namespace Dicom.Network
 
                 try
                 {
+                    msg.UserState = "No PresentationContext";
                     if (msg is DicomCStoreRequest)
                         (msg as DicomCStoreRequest).PostResponse(
                             this,
@@ -995,6 +1012,12 @@ namespace Dicom.Network
             }
             else
             {
+                if(msg is DicomRequest)
+                {
+                    DicomRequest req = msg as DicomRequest;
+                    if (req.OnBeforeSendRequest != null) req.OnBeforeSendRequest();
+                }
+
                 var dimse = new Dimse { Message = msg, PresentationContext = pc };
 
                 // force calculation of command group length as required by standard
@@ -1012,7 +1035,10 @@ namespace Dicom.Network
                     if (msg.Dataset.InternalTransferSyntax != dimse.PresentationContext.AcceptedTransferSyntax) msg.Dataset = msg.Dataset.Clone(dimse.PresentationContext.AcceptedTransferSyntax);
                 }
 
-                Logger.Info("{logId} -> {dicomMessage}", LogID, msg.ToString(Options.LogDimseDatasets));
+                if (msg is DicomCStoreRequest)
+                {
+                    Logger.Debug("{logId} -> {dicomMessage} starting", LogID, msg.ToString());
+                }
 
                 try
                 {
@@ -1038,6 +1064,7 @@ namespace Dicom.Network
                         dimse.Walker = new DicomDatasetWalker(dimse.Message.Dataset);
                         dimse.Walker.Walk(writer);
                     }
+                    Logger.Info("{logId} -> {dicomMessage}", LogID, msg.ToString(Options.LogDimseDatasets));
                 }
                 catch (Exception e)
                 {
@@ -1082,8 +1109,8 @@ namespace Dicom.Network
                 lock (_lock) IsConnected = false;
 
                 Logger.Info("Connection closed");
-
-                if (exception != null) throw exception;
+                //throwing here just bubbles out... why do that?
+                //if (exception != null) throw exception;
                 return true;
             }
             catch (Exception e)
@@ -1205,7 +1232,7 @@ namespace Dicom.Network
             string errorDescriptor;
             if (NetworkManager.IsSocketException(e.InnerException, out errorCode, out errorDescriptor))
             {
-                logger.Info(
+                logger.Warn(
                     $"Socket error while {(reading ? "reading" : "writing")} PDU: {{socketError}} [{{errorCode}}]",
                     errorDescriptor,
                     errorCode);
@@ -1214,7 +1241,7 @@ namespace Dicom.Network
 
             if (e.InnerException is ObjectDisposedException)
             {
-                logger.Info($"Object disposed while {(reading ? "reading" : "writing")} PDU: {{@error}}", e);
+                logger.Warn($"Object disposed while {(reading ? "reading" : "writing")} PDU: {{@error}}", e);
             }
             else
             {

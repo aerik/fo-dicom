@@ -39,6 +39,7 @@ namespace Dicom.Network
             SOPClassUID = request.SOPClassUID;
             RequestMessageID = request.MessageID;
             Status = status;
+            UserState = request.UserState;
         }
 
         /// <summary>
