@@ -12,6 +12,9 @@ namespace Dicom.IO
     {
         private bool isTempFile;
 
+        //checking to see if streams aren't being closed
+        private System.Collections.Generic.List<ReferenceStream> streamList = new System.Collections.Generic.List<ReferenceStream>();
+
         /// <summary>
         /// Initializes a <see cref="DesktopFileReference"/> object.
         /// </summary>
@@ -27,6 +30,22 @@ namespace Dicom.IO
         /// </summary>
         ~DesktopFileReference()
         {
+            bool hasOpenStream = false;
+            for(int i= 0; i<streamList.Count; i++)
+            {
+                var stream = streamList[i];
+                if (!stream.IsDisposed)
+                {
+                    hasOpenStream = true;
+                    stream.Dispose();
+                }
+            }
+            streamList.Clear();
+            if (hasOpenStream)
+            {
+                var logger = Log.LogManager.GetLogger("FileReference");
+                logger.Log(Log.LogLevel.Warning, "Desktopfilereference had open stream");
+            }
             if (this.IsTempFile)
             {
                 TemporaryFileRemover.Delete(this);
@@ -94,7 +113,9 @@ namespace Dicom.IO
         /// <returns>Stream to the created file.</returns>
         public Stream Create()
         {
-            return File.Create(this.Name);
+            var stream = new ReferenceStream(File.Create(this.Name));
+            streamList.Add(stream);
+            return stream;
         }
 
         /// <summary>
@@ -103,7 +124,9 @@ namespace Dicom.IO
         /// <returns></returns>
         public Stream Open()
         {
-            return File.Open(this.Name, FileMode.Open, FileAccess.ReadWrite);
+            var stream = new ReferenceStream(File.Open(this.Name, FileMode.Open, FileAccess.ReadWrite));
+            streamList.Add(stream);
+            return stream;
         }
 
         /// <summary>
@@ -112,7 +135,9 @@ namespace Dicom.IO
         /// <returns>Stream to the opened file.</returns>
         public Stream OpenRead()
         {
-            return File.OpenRead(this.Name);
+            var stream = new ReferenceStream(File.OpenRead(this.Name));
+            streamList.Add(stream);
+            return stream;
         }
 
         /// <summary>
@@ -121,7 +146,9 @@ namespace Dicom.IO
         /// <returns>Stream to the opened file.</returns>
         public Stream OpenWrite()
         {
-            return File.OpenWrite(this.Name);
+            var stream = new ReferenceStream(File.OpenWrite(this.Name));
+            streamList.Add(stream);
+            return stream;
         }
 
         /// <summary>
@@ -177,6 +204,108 @@ namespace Dicom.IO
         public override string ToString()
         {
             return this.IsTempFile ? string.Format("{0} [TEMP]", this.Name) : this.Name;
+        }
+
+        private class ReferenceStream : Stream, System.IDisposable
+        {
+
+            #region IDisposable Support
+            private bool disposedValue = false; // To detect redundant calls
+            private Stream innerStream;
+            public bool IsDisposed
+            {
+                get
+                {
+                    return disposedValue;
+                }
+            }
+
+            public ReferenceStream(Stream stream)
+            {
+                innerStream = stream;
+            }
+
+            public override bool CanRead => innerStream.CanRead;
+
+            public override bool CanSeek => innerStream.CanSeek;
+
+            public override bool CanWrite => innerStream.CanWrite;
+
+            public override long Length => innerStream.Length;
+
+            public override long Position {
+                get {
+                    return innerStream.Position;
+                }
+                set
+                {
+                    innerStream.Position = value;
+                }
+            }
+
+            public override void Flush()
+            {
+                innerStream.Flush();
+            }
+
+            public override int Read(byte[] buffer, int offset, int count)
+            {
+                return innerStream.Read(buffer, offset, count);
+            }
+
+            public override long Seek(long offset, SeekOrigin origin)
+            {
+                return innerStream.Seek(offset, origin);
+            }
+
+            public override void SetLength(long value)
+            {
+                innerStream.SetLength(value);
+            }
+
+            public override void Write(byte[] buffer, int offset, int count)
+            {
+                innerStream.Write(buffer, offset, count);
+            }
+
+            protected override void Dispose(bool disposing)
+            {
+                if (!disposedValue)
+                {
+                    if (disposing)
+                    {
+                        try
+                        {
+                            innerStream.Dispose();
+                        }
+                        catch { }
+                    }
+
+                    // TODO: free unmanaged resources (unmanaged objects) and override a finalizer below.
+                    // TODO: set large fields to null.
+
+                    disposedValue = true;
+                }
+            }
+
+            // TODO: override a finalizer only if Dispose(bool disposing) above has code to free unmanaged resources.
+            // ~ReferenceStream() {
+            //   // Do not change this code. Put cleanup code in Dispose(bool disposing) above.
+            //   Dispose(false);
+            // }
+
+            // This code added to correctly implement the disposable pattern.
+            public new void Dispose()
+            {
+                // Do not change this code. Put cleanup code in Dispose(bool disposing) above.
+                Dispose(true);
+                // TODO: uncomment the following line if the finalizer is overridden above.
+                // GC.SuppressFinalize(this);
+            }
+            #endregion
+
+
+
         }
     }
 }
