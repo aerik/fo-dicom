@@ -85,6 +85,7 @@ namespace Dicom.Network
             this.RemotePort = ((IPEndPoint)tcpClient.Client.RemoteEndPoint).Port;
 
             Stream stream = tcpClient.GetStream();
+
             if (certificate != null)
             {
                 var ssl = new SslStream(stream, false);

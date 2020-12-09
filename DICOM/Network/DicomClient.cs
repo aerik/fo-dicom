@@ -15,7 +15,7 @@ namespace Dicom.Network
     /// <summary>
     /// General client class for DICOM services.
     /// </summary>
-    public class DicomClient
+    public class DicomClient:IDisposable
     {
         #region FIELDS
 
@@ -200,11 +200,7 @@ namespace Dicom.Network
         {
             if (!CanSend) return;
 
-            var noDelay = Options?.TcpNoDelay ?? DicomServiceOptions.Default.TcpNoDelay;
-            var ignoreSslPolicyErrors = Options?.IgnoreSslPolicyErrors
-                                        ?? DicomServiceOptions.Default.IgnoreSslPolicyErrors;
-
-            this.networkStream = NetworkManager.CreateNetworkStream(host, port, useTls, noDelay, ignoreSslPolicyErrors);
+            GetNetworkStream(host, port, useTls);
 
             var assoc = new DicomAssociation(callingAe, calledAe)
             {
@@ -223,6 +219,7 @@ namespace Dicom.Network
                 throw e.Flatten().InnerException;
             }
         }
+
 
         /// <summary>
         /// Asynchonously send existing requests to DICOM service.
@@ -252,11 +249,7 @@ namespace Dicom.Network
         {
             if (!CanSend) Task.FromResult(false);   // TODO Replace with Task.CompletedTask when moving to .NET 4.6
 
-            var noDelay = Options?.TcpNoDelay ?? DicomServiceOptions.Default.TcpNoDelay;
-            var ignoreSslPolicyErrors = Options?.IgnoreSslPolicyErrors
-                                        ?? DicomServiceOptions.Default.IgnoreSslPolicyErrors;
-
-            this.networkStream = NetworkManager.CreateNetworkStream(host, port, useTls, noDelay, ignoreSslPolicyErrors);
+            GetNetworkStream(host, port, useTls);
 
             var assoc = new DicomAssociation(callingAe, calledAe)
             {
@@ -267,6 +260,15 @@ namespace Dicom.Network
             };
 
             return DoSendAsync(this.networkStream, assoc, cancelTok);
+        }
+
+        public INetworkStream GetNetworkStream(string host, int port, bool useTls)
+        {
+            var noDelay = Options?.TcpNoDelay ?? DicomServiceOptions.Default.TcpNoDelay;
+            var ignoreSslPolicyErrors = Options?.IgnoreSslPolicyErrors
+                                        ?? DicomServiceOptions.Default.IgnoreSslPolicyErrors;
+            this.networkStream = NetworkManager.CreateNetworkStream(host, port, useTls, noDelay, ignoreSslPolicyErrors);
+            return this.networkStream;
         }
 
         /// <summary>
@@ -298,6 +300,11 @@ namespace Dicom.Network
             }
         }
 
+        public Task SendAsync(INetworkStream stream, string callingAe, string calledAe)
+        {
+            return SendAsync(stream, callingAe, calledAe, CancellationToken.None);
+        }
+
         /// <summary>
         /// Asynchronously send existing requests to DICOM service.
         /// </summary>
@@ -305,7 +312,7 @@ namespace Dicom.Network
         /// <param name="callingAe">Calling Application Entity Title.</param>
         /// <param name="calledAe">Called Application Entity Title.</param>
         /// <returns>Awaitable task.</returns>
-        public Task SendAsync(INetworkStream stream, string callingAe, string calledAe)
+        public Task SendAsync(INetworkStream stream, string callingAe, string calledAe, CancellationToken cancelTok)
         {
             if (!CanSend) return Task.FromResult(false);   // TODO Replace with Task.CompletedTask when moving to .NET 4.6
 
@@ -317,7 +324,7 @@ namespace Dicom.Network
                 RemotePort = stream.RemotePort
             };
 
-            return DoSendAsync(stream, assoc);
+            return DoSendAsync(stream, assoc, cancelTok);
         }
 
         /// <summary>
@@ -480,33 +487,7 @@ namespace Dicom.Network
 
             if (cleanup || completedException != null || lingerException != null)
             {
-                if (this.networkStream != null)
-                {
-                    try
-                    {
-                        this.networkStream.Dispose();
-                    }
-                    catch (Exception e)
-                    {
-                        Logger.Warn("Failed to dispose network stream, reason: {@error}", e);
-                    }
-
-                    this.networkStream = null;
-                }
-
-                if (this.service != null)
-                {
-                    try
-                    {
-                        this.service.Dispose();
-                    }
-                    catch (Exception e)
-                    {
-                        Logger.Warn("Failed to dispose service, reason: {@error}", e);
-                    }
-
-                    this.service = null;
-                }
+                Dispose();
             }
 
             // If not already set, set notifiers here to signal completion to awaiters
@@ -523,6 +504,37 @@ namespace Dicom.Network
             {
                 // ReSharper disable once PossibleNullReferenceException
                 throw lingerException.Flatten().InnerException;
+            }
+        }
+
+        public void Dispose()
+        {
+            if (this.networkStream != null)
+            {
+                try
+                {
+                    this.networkStream.Dispose();//likely redundant with service, but conceivably not
+                }
+                catch (Exception e)
+                {
+                    Logger.Warn("Failed to dispose network stream, reason: {@error}", e);
+                }
+
+                this.networkStream = null;
+            }
+
+            if (this.service != null)
+            {
+                try
+                {
+                    this.service.Dispose();
+                }
+                catch (Exception e)
+                {
+                    Logger.Warn("Failed to dispose service, reason: {@error}", e);
+                }
+
+                this.service = null;
             }
         }
 
@@ -554,6 +566,7 @@ namespace Dicom.Network
                 : base(stream, fallbackEncoding, log)
             {
                 this.client = client;
+
                 if (options != null)
                 {
                     Options = options;
@@ -649,6 +662,21 @@ namespace Dicom.Network
             /// <param name="exception">Exception, if any, that forced connection to close.</param>
             public void OnConnectionClosed(Exception exception)
             {
+                //logging handled in DicomService
+                //string msg = "DicomSCU connection closed, Association state: " + AssociationState.ToString();
+                //if(this.Association != null)
+                //{
+                //    msg = this.Association.CalledAE + " -> " + msg;
+                //}
+                //if(exception != null)
+                //{
+                //    msg += "; Error: " + exception.Message;
+                //    Logger.Warn(msg);
+                //}
+                //else
+                //{
+                //    Logger.Info(msg);
+                //}
                 SetComplete(exception);
             }
 

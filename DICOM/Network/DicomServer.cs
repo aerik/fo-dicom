@@ -253,7 +253,15 @@ namespace Dicom.Network
                 try
                 {
                     await Task.Delay(1000, this.cancellationSource.Token).ConfigureAwait(false);
-                    this.clients.RemoveAll(client => !client.IsConnected);
+                    for(int i = clients.Count-1; i >= 0; i--)
+                    {
+                        if (!this.clients[i].IsConnected)
+                        {
+                            this.clients[i].Dispose();
+                            this.clients.RemoveAt(i);
+                        }
+                    }
+                    //this.clients.RemoveAll(client => !client.IsConnected);
                 }
                 catch (OperationCanceledException)
                 {

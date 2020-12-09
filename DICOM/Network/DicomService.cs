@@ -22,6 +22,8 @@ namespace Dicom.Network
     /// </summary>
     public abstract class DicomService : IDisposable
     {
+        public enum DicomAssociationState {None=0, Requested=1, Accepted=2, Rejected=3, ReleaseRequested=4, Released=5 }
+
         #region FIELDS
 
         private bool _disposed = false;
@@ -110,6 +112,8 @@ namespace Dicom.Network
         /// </summary>
         public DicomAssociation Association { get; internal set; }
 
+        public DicomAssociationState AssociationState { get; private set; }
+
         /// <summary>
         /// Gets whether or not the service is connected.
         /// </summary>
@@ -155,8 +159,28 @@ namespace Dicom.Network
             if (disposing)
             {
                 _dimseStream?.Dispose();
-                _network?.Dispose();
+                _network?.Dispose();//this might not be "owned" by the DicomService... TBD
                 _pduQueueWatcher?.Dispose();
+                string logMsg = "";
+                if (LogID != null) logMsg = LogID;
+                if (this is IDicomServiceUser)
+                {
+                    if (this.Association != null)
+                    {
+                        logMsg += this.Association.CalledAE + " -> ";
+                    }
+                    logMsg += "DicomSCU";
+                }
+                else
+                {
+                    if (this.Association != null)
+                    {
+                        logMsg += " -> ";
+                    }
+                    logMsg += "DicomSCP";
+                }
+                logMsg += " connection disposed, Association state: " + AssociationState.ToString();
+                Logger.Info(logMsg);
             }
             _disposed = true;
         }
@@ -316,8 +340,24 @@ namespace Dicom.Network
             }
         }
 
+        private async Task<int> ReadStreamAsync(Stream stream, byte[] buffer, int offset, int count, int timeoutMs)
+        {
+            if (stream.CanRead)
+            {
+
+                Task<int> readTask = stream.ReadAsync(buffer, offset, count);
+                Task delayTask = Task.Delay(timeoutMs);
+                Task task = await Task.WhenAny(readTask, delayTask);
+
+                if (task == readTask)
+                    return await readTask;
+            }
+            return 0;
+        }
+
         private async Task ListenAndProcessPDUAsync()
         {
+            int readTimeoutMs = 60000;//minute
             try
             {
                 while (IsConnected)
@@ -331,13 +371,17 @@ namespace Dicom.Network
                     var count = 0;
                     if (stream.CanRead)
                     {
-                        count = await stream.ReadAsync(buffer, 0, 6).ConfigureAwait(false);
+                        count = await ReadStreamAsync(stream, buffer, 0, 6, readTimeoutMs).ConfigureAwait(false);
+                        //count = await stream.ReadAsync(buffer, 0, 6).ConfigureAwait(false);
                     }
                     do
                     {
                         if (count == 0)
                         {
                             // disconnected
+                            string logMsg = "";
+                            if (LogID != null) logMsg = LogID;
+                            Logger.Info(logMsg + " No Bytes read, disconnecting");
                             TryCloseConnection();
                             return;
                         }
@@ -345,7 +389,8 @@ namespace Dicom.Network
                         _readLength -= count;
                         if (_readLength > 0)
                         {
-                            count = await stream.ReadAsync(buffer, 6 - _readLength, _readLength).ConfigureAwait(false);
+                            count = await ReadStreamAsync(stream, buffer, 6 - _readLength, _readLength, readTimeoutMs).ConfigureAwait(false);
+                            //count = await stream.ReadAsync(buffer, 6 - _readLength, _readLength).ConfigureAwait(false);
                         }
                     }
                     while (_readLength > 0);
@@ -356,8 +401,8 @@ namespace Dicom.Network
                     _readLength = length;
 
                     Array.Resize(ref buffer, length + 6);
-
-                    count = await stream.ReadAsync(buffer, 6, length).ConfigureAwait(false);
+                    count = await ReadStreamAsync(stream, buffer, 6, length, readTimeoutMs).ConfigureAwait(false);
+                    //count = await stream.ReadAsync(buffer, 6, length).ConfigureAwait(false);
 
                     // Read PDU
                     do
@@ -394,7 +439,7 @@ namespace Dicom.Network
                                                   };
                                 var pdu = new AAssociateRQ(Association);
                                 pdu.Read(raw);
-                                LogID = Association.CallingAE;
+                                LogID = Association.CallingAE + " ("+Association.AssociationId.ToString()+")";
                                 if (Options.UseRemoteAEForLogName)
                                 {
                                     Logger = LogManager.GetLogger(LogID);
@@ -407,6 +452,7 @@ namespace Dicom.Network
                                     "{callingAE} <- Association request:\n{association}",
                                     LogID,
                                     Association.ToString());
+                                AssociationState = DicomAssociationState.Requested;
                                 (this as IDicomServiceProvider)?.OnReceiveAssociationRequest(Association);
                                 break;
                             }
@@ -414,11 +460,12 @@ namespace Dicom.Network
                             {
                                 var pdu = new AAssociateAC(Association);
                                 pdu.Read(raw);
-                                LogID = Association.CalledAE;
+                                LogID = Association.CalledAE + " (" + Association.AssociationId.ToString() + ")";
                                 Logger.Info(
                                     "{calledAE} <- Association accept:\n{assocation}",
                                     LogID,
                                     Association.ToString());
+                                AssociationState = DicomAssociationState.Accepted;
                                 (this as IDicomServiceUser)?.OnReceiveAssociationAccept(Association);
                                 break;
                             }
@@ -432,6 +479,7 @@ namespace Dicom.Network
                                     pdu.Result,
                                     pdu.Source,
                                     pdu.Reason);
+                                AssociationState = DicomAssociationState.Rejected;
                                 (this as IDicomServiceUser)?.OnReceiveAssociationReject(
                                     pdu.Result,
                                     pdu.Source,
@@ -452,6 +500,7 @@ namespace Dicom.Network
                                 var pdu = new AReleaseRQ();
                                 pdu.Read(raw);
                                 Logger.Info("{logId} <- Association release request", LogID);
+                                AssociationState = DicomAssociationState.ReleaseRequested;
                                 (this as IDicomServiceProvider)?.OnReceiveAssociationReleaseRequest();
                                 break;
                             }
@@ -460,6 +509,7 @@ namespace Dicom.Network
                                 var pdu = new AReleaseRP();
                                 pdu.Read(raw);
                                 Logger.Info("{logId} <- Association release response", LogID);
+                                AssociationState = DicomAssociationState.Released;
                                 (this as IDicomServiceUser)?.OnReceiveAssociationReleaseResponse();
                                 if (TryCloseConnection()) return;
                                 break;
@@ -486,29 +536,26 @@ namespace Dicom.Network
                     }
                 }
             }
-            catch (ObjectDisposedException)
+            catch (ObjectDisposedException ode)
             {
-                // silently ignore
-                Logger.Warn("Object disposed while reading");
-                TryCloseConnection(force: true);
+                TryCloseConnection(ode, true);
             }
-            catch (NullReferenceException)
+            catch (NullReferenceException nre)
             {
-                // connection already closed; silently ignore
-                Logger.Warn("Null reference while reading");
-                TryCloseConnection(force: true);
+                TryCloseConnection(nre,  true);
             }
             catch (IOException e)
             {
                 // LogIOException returns true for underlying socket error (probably due to forcibly closed connection), 
-                // in that case discard exception
-                TryCloseConnection(LogIOException(e, Logger, true) ? null : e, true);
+                LogIOException(e, Logger, true);
+                TryCloseConnection(e, true);
             }
             catch (Exception e)
             {
                 Logger.Error("Exception processing PDU: {@error}", e);
                 TryCloseConnection(e);
             }
+            Logger.Debug("Ending ListenAndProcessPDUAsync");
         }
 
         /// <summary>
@@ -1096,19 +1143,46 @@ namespace Dicom.Network
 
                     if (_pduQueue.Count > 0 || _msgQueue.Count > 0 || _pending.Count > 0)
                     {
-                        Logger.Info(
+                        Logger.Warn(
                             "Queue(s) not empty, PDUs: {pduCount}, messages: {msgCount}, pending requests: {pendingCount}",
                             _pduQueue.Count,
                             _msgQueue.Count,
                             _pending.Count);
-                            return false;
-                        }
+                        return false;
                     }
+                }
+                string logMsg = "";
+                if (LogID != null) logMsg = LogID;
+                if (this is IDicomServiceUser)
+                {
+                    if (this.Association != null)
+                    {
+                        logMsg += " -> ";
+                    }
+                    logMsg += "DicomSCU";
+                }
+                else
+                {
+                    if (this.Association != null)
+                    {
+                        logMsg += " -> ";
+                    }
+                    logMsg += "DicomSCP";
+                }
+                logMsg += " connection ending, Association state: " + AssociationState.ToString();
+                if (exception != null)
+                {
+                    logMsg += "; Error: " + exception.Message;
+                    Logger.Warn(logMsg);
+                }
+                else
+                {
+                    Logger.Info(logMsg);
+                }
 
                 (this as IDicomService)?.OnConnectionClosed(exception);
                 lock (_lock) IsConnected = false;
 
-                Logger.Info("Connection closed");
                 //throwing here just bubbles out... why do that?
                 //if (exception != null) throw exception;
                 return true;
@@ -1130,10 +1204,11 @@ namespace Dicom.Network
         /// <param name="association">DICOM association.</param>
         protected void SendAssociationRequest(DicomAssociation association)
         {
-            LogID = association.CalledAE;
+            LogID = association.CalledAE + " (" + association.AssociationId.ToString() + ")"; ;
             if (Options.UseRemoteAEForLogName) Logger = LogManager.GetLogger(LogID);
             Logger.Info("{calledAE} -> Association request:\n{association}", LogID, association.ToString());
             Association = association;
+            AssociationState = DicomAssociationState.Requested;
             this.SendPDUAsync(new AAssociateRQ(Association)).Wait();
         }
 
@@ -1152,6 +1227,7 @@ namespace Dicom.Network
             }
 
             Logger.Info("{logId} -> Association accept:\n{association}", LogID, association.ToString());
+            AssociationState = DicomAssociationState.Accepted;
             this.SendPDUAsync(new AAssociateAC(Association)).Wait();
         }
 
@@ -1172,6 +1248,7 @@ namespace Dicom.Network
                 result,
                 source,
                 reason);
+            AssociationState = DicomAssociationState.Rejected;
             this.SendPDUAsync(new AAssociateRJ(result, source, reason)).Wait();
             if (!TryCloseConnection())
             {
@@ -1185,6 +1262,7 @@ namespace Dicom.Network
         protected void SendAssociationReleaseRequest()
         {
             Logger.Info("{logId} -> Association release request", LogID);
+            AssociationState = DicomAssociationState.ReleaseRequested;
             this.SendPDUAsync(new AReleaseRQ()).Wait();
         }
 
@@ -1194,6 +1272,7 @@ namespace Dicom.Network
         protected void SendAssociationReleaseResponse()
         {
             Logger.Info("{logId} -> Association release response", LogID);
+            AssociationState = DicomAssociationState.Released;
             this.SendPDUAsync(new AReleaseRP()).Wait();
         }
 
@@ -1207,7 +1286,7 @@ namespace Dicom.Network
             _pduQueue.Clear();
             _msgQueue.Clear();
             _pending.Clear();
-            Logger.Info("{logId} -> Abort [source: {source}; reason: {reason}]", LogID, source, reason);
+            Logger.Warn("{logId} -> Abort [source: {source}; reason: {reason}]", LogID, source, reason);
             this.SendPDUAsync(new AAbort(source, reason)).Wait();
         }
 
@@ -1226,14 +1305,16 @@ namespace Dicom.Network
 
         #region Helper methods
 
-        private static bool LogIOException(Exception e, Logger logger, bool reading)
+        private bool LogIOException(Exception e, Logger logger, bool reading)
         {
             int errorCode;
             string errorDescriptor;
             if (NetworkManager.IsSocketException(e.InnerException, out errorCode, out errorDescriptor))
             {
-                logger.Warn(
-                    $"Socket error while {(reading ? "reading" : "writing")} PDU: {{socketError}} [{{errorCode}}]",
+                string logMsg = "";
+                if (LogID != null) logMsg = LogID;
+                logger.Warn( logMsg + 
+                    $" Socket error while {(reading ? "reading" : "writing")} PDU: {{socketError}} [{{errorCode}}]",
                     errorDescriptor,
                     errorCode);
                 return true;

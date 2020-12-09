@@ -11,6 +11,12 @@ namespace Dicom.Network
     /// </summary>
     public sealed class DicomAssociation
     {
+        private static volatile ushort _AssociationCounter = 0;
+        private static readonly object _locker = new object();
+
+        private readonly ushort _AssociationId;
+
+
         /// <summary>
         /// Initializes a new instance of the <see cref="DicomAssociation"/> class. 
         /// </summary>
@@ -20,6 +26,12 @@ namespace Dicom.Network
             MaxAsyncOpsInvoked = 1;
             MaxAsyncOpsPerformed = 1;
             ExtendedNegotiations = new List<DicomExtendedNegotiation>();
+            lock (_locker)
+            {
+                _AssociationCounter++;
+                _AssociationId = _AssociationCounter;
+                if (_AssociationCounter == ushort.MaxValue) _AssociationCounter = 0;
+            }
         }
 
         /// <summary>
@@ -34,6 +46,14 @@ namespace Dicom.Network
             CallingAE = callingAe;
             CalledAE = calledAe;
             MaximumPDULength = maxPduLength;
+        }
+
+        public ushort AssociationId
+        {
+            get
+            {
+                return _AssociationId;
+            }
         }
 
         /// <summary>
