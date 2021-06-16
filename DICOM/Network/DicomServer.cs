@@ -31,6 +31,8 @@ namespace Dicom.Network
 
         private readonly List<T> clients;
 
+        private readonly object _clientLocker = new object();
+
         #endregion
 
         #region CONSTRUCTORS
@@ -140,7 +142,10 @@ namespace Dicom.Network
             {
                 this.Stop();
                 this.cancellationSource.Dispose();
-                this.clients.Clear();
+                lock (_clientLocker)
+                {
+                    this.clients.Clear();
+                }
             }
 
             this.Unregister();
@@ -214,7 +219,10 @@ namespace Dicom.Network
                         {
                             scp.Options = this.Options;
                         }
-                        this.clients.Add(scp);
+                        lock (_clientLocker)
+                        {
+                            this.clients.Add(scp);
+                        }
                     }
                 }
 
@@ -253,12 +261,31 @@ namespace Dicom.Network
                 try
                 {
                     await Task.Delay(1000, this.cancellationSource.Token).ConfigureAwait(false);
-                    for(int i = clients.Count-1; i >= 0; i--)
+                    lock (_clientLocker)
                     {
-                        if (!this.clients[i].IsConnected)
+                        for (int i = clients.Count - 1; i >= 0; i--)
                         {
-                            this.clients[i].Dispose();
-                            this.clients.RemoveAt(i);
+                            var curClient = this.clients[i];
+                            if(curClient == null)
+                            {
+                                this.clients.RemoveAt(i);
+                            }
+                            else if (!curClient.IsConnected)
+                            {
+                                curClient.Dispose();
+                                this.clients.RemoveAt(i);
+                            }
+                            else
+                            {
+                                DateTime lastActive = curClient.LastActivity;
+                                var elapsed = DateTime.Now - lastActive;
+                                if (elapsed.TotalMinutes > 5) // was one minute, too short
+                                {
+                                    this.Logger.Warn("Client " + curClient.RemoteHost + " has no activity since " + lastActive.ToString() + ", disconnecting");
+                                    curClient.Dispose();
+                                    this.clients.RemoveAt(i);
+                                }
+                            }
                         }
                     }
                     //this.clients.RemoveAll(client => !client.IsConnected);
