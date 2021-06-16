@@ -634,6 +634,36 @@ namespace Dicom.IO.Reader
                         this.ParseFragmentSequence(source);
                         return true;
                     }
+                    //read broken jpeg fragments? - Aerik
+                    //this doesn't break, but there's more to it than this
+                    if(this._tag == DicomTag.PixelData)
+                    {
+                        source.Mark();
+                        if (source.Require(1032)) // 8 + 1024
+                        {
+                            var group = source.GetUInt16();
+                            var element = source.GetUInt16();
+                            DicomTag tag = new DicomTag(@group, element);
+                            if (tag == DicomTag.Item) // FF FE E0 00
+                            {
+                                //scan for jpeg...
+                                byte[] scanner = source.GetBytes(1000);
+                                string hexBytes = BitConverter.ToString(scanner).Replace("-", string.Empty);
+                                int soi = hexBytes.IndexOf("FFD8FFE0");
+                                int jfif = hexBytes.IndexOf("4A46494600");
+                                if(soi > -1 && jfif > soi)
+                                {
+                                    source.Rewind();
+                                    this.length = UndefinedLength;
+                                    this.observer.OnBeginFragmentSequence(source, this._tag, this._vr);
+                                    this.parseStage = ParseStage.Tag;
+                                    this.ParseFragmentSequence(source);
+                                    return true;
+                                }
+                            }
+                            source.Rewind();
+                        }
+                    }
 
                     if (!source.Require(this.length))
                     {
@@ -774,6 +804,36 @@ namespace Dicom.IO.Reader
                         this.parseStage = ParseStage.Tag;
                         await this.ParseFragmentSequenceAsync(source).ConfigureAwait(false);
                         return true;
+                    }
+                    //read broken jpeg fragments? - Aerik
+                    //this doesn't break, but there's more to it than this
+                    if (this._tag == DicomTag.PixelData)
+                    {
+                        source.Mark();
+                        if (source.Require(1032)) // 8 + 1024
+                        {
+                            var group = source.GetUInt16();
+                            var element = source.GetUInt16();
+                            DicomTag tag = new DicomTag(@group, element);
+                            if (tag == DicomTag.Item) // FF FE E0 00
+                            {
+                                //scan for jpeg...
+                                byte[] scanner = source.GetBytes(1000);
+                                string hexBytes = BitConverter.ToString(scanner).Replace("-", string.Empty);
+                                int soi = hexBytes.IndexOf("FFD8FFE0");
+                                int jfif = hexBytes.IndexOf("4A46494600");
+                                if (soi > -1 && jfif > soi)
+                                {
+                                    source.Rewind();
+                                    this.length = UndefinedLength;
+                                    this.observer.OnBeginFragmentSequence(source, this._tag, this._vr);
+                                    this.parseStage = ParseStage.Tag;
+                                    this.ParseFragmentSequence(source);
+                                    return true;
+                                }
+                            }
+                            source.Rewind();
+                        }
                     }
 
                     if (!source.Require(this.length))
