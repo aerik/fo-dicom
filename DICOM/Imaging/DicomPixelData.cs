@@ -402,6 +402,7 @@ namespace Dicom.Imaging
 
             public override IByteBuffer GetFrame(int frame)
             {
+                if (frame == -1) return Element.Buffer;
                 if (frame < 0 || frame >= NumberOfFrames) throw new IndexOutOfRangeException("Requested frame out of range!");
 
                 int offset = UncompressedFrameSize * frame;
@@ -448,6 +449,7 @@ namespace Dicom.Imaging
 
             public override IByteBuffer GetFrame(int frame)
             {
+                if (frame == -1) return Element.Buffer;
                 if (frame < 0 || frame >= NumberOfFrames) throw new IndexOutOfRangeException("Requested frame out of range!");
 
                 int offset = UncompressedFrameSize * frame;
@@ -502,6 +504,7 @@ namespace Dicom.Imaging
 
             public override IByteBuffer GetFrame(int frame)
             {
+                if (frame == -1) return new CompositeByteBuffer(Element.Fragments.ToArray()); 
                 if (frame < 0 || frame >= NumberOfFrames) throw new IndexOutOfRangeException("Requested frame out of range!");
 
                 IByteBuffer buffer = null;
@@ -511,7 +514,7 @@ namespace Dicom.Imaging
                     if (Element.Fragments.Count == 1) buffer = Element.Fragments[0];
                     else buffer = new CompositeByteBuffer(Element.Fragments.ToArray());
                 }
-                else if (Element.Fragments.Count == NumberOfFrames) buffer = Element.Fragments[frame];
+                else if (Element.Fragments.Count >= NumberOfFrames) buffer = Element.Fragments[frame];
                 else if (Element.OffsetTable.Count == NumberOfFrames)
                 {
                     uint start = Element.OffsetTable[frame];
