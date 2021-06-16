@@ -13,15 +13,22 @@ namespace Dicom.IO.Buffer
         #region FIELDS
 
         private readonly IFileReference file;
+        public IFileReference File
+        {
+            get
+            {
+                return file;
+            }
+        }
 
         #endregion
 
-        #region CONSTRUCTORS
+            #region CONSTRUCTORS
 
-        /// <summary>
-        /// Initializes a <see cref="TempFileBuffer"/> object.
-        /// </summary>
-        /// <param name="data">Byte array subject to buffering.</param>
+            /// <summary>
+            /// Initializes a <see cref="TempFileBuffer"/> object.
+            /// </summary>
+            /// <param name="data">Byte array subject to buffering.</param>
         public TempFileBuffer(byte[] data)
         {
             this.file = TemporaryFile.Create();

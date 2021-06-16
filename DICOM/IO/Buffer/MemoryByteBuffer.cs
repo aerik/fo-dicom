@@ -40,5 +40,10 @@ namespace Dicom.IO.Buffer
             Array.Copy(Data, offset, buffer, 0, count);
             return buffer;
         }
+
+        public void Clear()
+        {
+            this.Data = new byte[0];
+        }
     }
 }
