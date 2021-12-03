@@ -58,6 +58,7 @@
             this.error4ToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.error5ToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.error10ToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.error20ToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.rLELosslessToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.exportPixelDataToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.lvDicom = new System.Windows.Forms.ListView();
@@ -68,7 +69,7 @@
             this.cmDicom = new System.Windows.Forms.ContextMenuStrip(this.components);
             this.copyValueToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.copyTagToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.error20ToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.columnHeaderPos = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             this.menuStrip1.SuspendLayout();
             this.cmDicom.SuspendLayout();
             this.SuspendLayout();
@@ -115,14 +116,14 @@
             this.menuItemSyntax,
             this.exportPixelDataToolStripMenuItem});
             this.menuItemTools.Name = "menuItemTools";
-            this.menuItemTools.Size = new System.Drawing.Size(47, 20);
+            this.menuItemTools.Size = new System.Drawing.Size(46, 20);
             this.menuItemTools.Text = "&Tools";
             // 
             // menuItemView
             // 
             this.menuItemView.Enabled = false;
             this.menuItemView.Name = "menuItemView";
-            this.menuItemView.Size = new System.Drawing.Size(161, 22);
+            this.menuItemView.Size = new System.Drawing.Size(163, 22);
             this.menuItemView.Text = "&View";
             this.menuItemView.Click += new System.EventHandler(this.OnClickView);
             // 
@@ -142,7 +143,7 @@
             this.rLELosslessToolStripMenuItem});
             this.menuItemSyntax.Enabled = false;
             this.menuItemSyntax.Name = "menuItemSyntax";
-            this.menuItemSyntax.Size = new System.Drawing.Size(161, 22);
+            this.menuItemSyntax.Size = new System.Drawing.Size(163, 22);
             this.menuItemSyntax.Text = "&Change Syntax";
             // 
             // explicitVRLittleEndianToolStripMenuItem
@@ -320,37 +321,44 @@
             // error2ToolStripMenuItem
             // 
             this.error2ToolStripMenuItem.Name = "error2ToolStripMenuItem";
-            this.error2ToolStripMenuItem.Size = new System.Drawing.Size(152, 22);
+            this.error2ToolStripMenuItem.Size = new System.Drawing.Size(117, 22);
             this.error2ToolStripMenuItem.Text = "Error: 2";
             this.error2ToolStripMenuItem.Click += new System.EventHandler(this.OnClickJPEGLSNearLosslessError2);
             // 
             // error3ToolStripMenuItem
             // 
             this.error3ToolStripMenuItem.Name = "error3ToolStripMenuItem";
-            this.error3ToolStripMenuItem.Size = new System.Drawing.Size(152, 22);
+            this.error3ToolStripMenuItem.Size = new System.Drawing.Size(117, 22);
             this.error3ToolStripMenuItem.Text = "Error: 3";
             this.error3ToolStripMenuItem.Click += new System.EventHandler(this.OnClickJPEGLSNearLosslessError3);
             // 
             // error4ToolStripMenuItem
             // 
             this.error4ToolStripMenuItem.Name = "error4ToolStripMenuItem";
-            this.error4ToolStripMenuItem.Size = new System.Drawing.Size(152, 22);
+            this.error4ToolStripMenuItem.Size = new System.Drawing.Size(117, 22);
             this.error4ToolStripMenuItem.Text = "Error: 4";
             this.error4ToolStripMenuItem.Click += new System.EventHandler(this.OnClickJPEGLSNearLosslessError4);
             // 
             // error5ToolStripMenuItem
             // 
             this.error5ToolStripMenuItem.Name = "error5ToolStripMenuItem";
-            this.error5ToolStripMenuItem.Size = new System.Drawing.Size(152, 22);
+            this.error5ToolStripMenuItem.Size = new System.Drawing.Size(117, 22);
             this.error5ToolStripMenuItem.Text = "Error: 5";
             this.error5ToolStripMenuItem.Click += new System.EventHandler(this.OnClickJPEGLSNearLosslessError5);
             // 
             // error10ToolStripMenuItem
             // 
             this.error10ToolStripMenuItem.Name = "error10ToolStripMenuItem";
-            this.error10ToolStripMenuItem.Size = new System.Drawing.Size(152, 22);
+            this.error10ToolStripMenuItem.Size = new System.Drawing.Size(117, 22);
             this.error10ToolStripMenuItem.Text = "Error: 10";
             this.error10ToolStripMenuItem.Click += new System.EventHandler(this.OnClickJPEGLSNearLosslessError10);
+            // 
+            // error20ToolStripMenuItem
+            // 
+            this.error20ToolStripMenuItem.Name = "error20ToolStripMenuItem";
+            this.error20ToolStripMenuItem.Size = new System.Drawing.Size(117, 22);
+            this.error20ToolStripMenuItem.Text = "Error: 20";
+            this.error20ToolStripMenuItem.Click += new System.EventHandler(this.error20ToolStripMenuItem_Click);
             // 
             // rLELosslessToolStripMenuItem
             // 
@@ -362,7 +370,7 @@
             // exportPixelDataToolStripMenuItem
             // 
             this.exportPixelDataToolStripMenuItem.Name = "exportPixelDataToolStripMenuItem";
-            this.exportPixelDataToolStripMenuItem.Size = new System.Drawing.Size(161, 22);
+            this.exportPixelDataToolStripMenuItem.Size = new System.Drawing.Size(163, 22);
             this.exportPixelDataToolStripMenuItem.Text = "Export Pixel Data";
             this.exportPixelDataToolStripMenuItem.Click += new System.EventHandler(this.OnClickExportPixelData);
             // 
@@ -372,10 +380,12 @@
             this.columnHeaderTag,
             this.columnHeaderVR,
             this.columnHeaderLength,
-            this.columnHeaderValue});
+            this.columnHeaderValue,
+            this.columnHeaderPos});
             this.lvDicom.ContextMenuStrip = this.cmDicom;
             this.lvDicom.Dock = System.Windows.Forms.DockStyle.Fill;
             this.lvDicom.FullRowSelect = true;
+            this.lvDicom.HideSelection = false;
             this.lvDicom.Location = new System.Drawing.Point(0, 24);
             this.lvDicom.MultiSelect = false;
             this.lvDicom.Name = "lvDicom";
@@ -401,7 +411,7 @@
             // columnHeaderValue
             // 
             this.columnHeaderValue.Text = "Value";
-            this.columnHeaderValue.Width = 440;
+            this.columnHeaderValue.Width = 400;
             // 
             // cmDicom
             // 
@@ -426,12 +436,9 @@
             this.copyTagToolStripMenuItem.Text = "Copy &Tag";
             this.copyTagToolStripMenuItem.Click += new System.EventHandler(this.OnClickContextMenuCopyTag);
             // 
-            // error20ToolStripMenuItem
+            // columnHeaderPos
             // 
-            this.error20ToolStripMenuItem.Name = "error20ToolStripMenuItem";
-            this.error20ToolStripMenuItem.Size = new System.Drawing.Size(152, 22);
-            this.error20ToolStripMenuItem.Text = "Error: 20";
-            this.error20ToolStripMenuItem.Click += new System.EventHandler(this.error20ToolStripMenuItem_Click);
+            this.columnHeaderPos.Text = "Position";
             // 
             // MainForm
             // 
@@ -502,6 +509,7 @@
 		private System.Windows.Forms.ToolStripMenuItem copyTagToolStripMenuItem;
 		private System.Windows.Forms.ToolStripMenuItem exportPixelDataToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem error20ToolStripMenuItem;
+        private System.Windows.Forms.ColumnHeader columnHeaderPos;
     }
 }
 

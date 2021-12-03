@@ -10,13 +10,13 @@ using System.Resources;
 
 #endif
 
-[assembly: AssemblyCompany("fo-dicom")]
-[assembly: AssemblyProduct("fo-dicom")]
-[assembly: AssemblyCopyright("Copyright © fo-dicom contributors 2012-2017")]
+[assembly: AssemblyCompany("fo-dicom (Vet Rocket LLC)")]
+[assembly: AssemblyProduct("fo-dicom (Vet Rocket)")]
+[assembly: AssemblyCopyright("Copyright © fo-dicom contributors 2012-2021")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 [assembly: NeutralResourcesLanguage("en")]
 
-[assembly: AssemblyVersion("3.0.0.3")]
-[assembly: AssemblyFileVersion("3.0.0.3")]
-[assembly: AssemblyInformationalVersion("3.0.0")]
+[assembly: AssemblyVersion("3.0.0.10")]
+[assembly: AssemblyFileVersion("3.0.0.10")]
+[assembly: AssemblyInformationalVersion("3.0.0.10")]

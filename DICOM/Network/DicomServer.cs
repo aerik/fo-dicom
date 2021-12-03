@@ -277,9 +277,10 @@ namespace Dicom.Network
                             }
                             else
                             {
+                                //should already be closed by check in CalcSpeed, but...
                                 DateTime lastActive = curClient.LastActivity;
                                 var elapsed = DateTime.Now - lastActive;
-                                if (elapsed.TotalMinutes > 5) // was one minute, too short
+                                if (elapsed.TotalMinutes > 10) // was one minute, too short
                                 {
                                     this.Logger.Warn("Client " + curClient.RemoteHost + " has no activity since " + lastActive.ToString() + ", disconnecting");
                                     curClient.Dispose();

@@ -47,13 +47,13 @@ namespace Dicom.Dump
             menuItemView.Enabled = false;
         }
 
-        private delegate void AddItemDelegate(string tag, string vr, string length, string value);
+        private delegate void AddItemDelegate(string tag, string vr, string length, string value, long streamPos);
 
-        private void AddItem(string tag, string vr, string length, string value)
+        private void AddItem(string tag, string vr, string length, string value, long streamPos = -1)
         {
             if (InvokeRequired)
             {
-                BeginInvoke(new AddItemDelegate(AddItem), tag, vr, length, value);
+                BeginInvoke(new AddItemDelegate(AddItem), tag, vr, length, value, streamPos);
                 return;
             }
 
@@ -61,6 +61,7 @@ namespace Dicom.Dump
             lvi.SubItems.Add(vr);
             lvi.SubItems.Add(length);
             lvi.SubItems.Add(value);
+            lvi.SubItems.Add(streamPos.ToString());
         }
 
         private bool IsStructuredReport => this._file != null
@@ -202,7 +203,7 @@ namespace Dicom.Dump
                     if (name != "Unknown") value = String.Format("{0} ({1})", value, name);
                 }
 
-                Form.AddItem(tag, element.ValueRepresentation.Code, element.Length.ToString(), value);
+                Form.AddItem(tag, element.ValueRepresentation.Code, element.Length.ToString(), value, element.StreamPosition);
                 return true;
             }
 

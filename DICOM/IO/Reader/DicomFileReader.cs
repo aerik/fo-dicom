@@ -331,8 +331,8 @@ namespace Dicom.IO.Reader
             }
             else
             {
-                if (reader.Read(source, new DicomReaderMultiObserver(obs, fileMetasetInfoObserver), FileMetaInfoStopCriterion)
-                    != DicomReaderResult.Stopped)
+                var readResult = reader.Read(source, new DicomReaderMultiObserver(obs, fileMetasetInfoObserver), FileMetaInfoStopCriterion);
+                if (readResult != DicomReaderResult.Stopped)
                 {
                     throw new DicomReaderException("DICOM File Meta Info ended prematurely");
                 }

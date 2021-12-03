@@ -482,8 +482,8 @@ void JPEGCODEC::Decode(DicomPixelData^ oldPixelData, DicomPixelData^ newPixelDat
 
         int rowSize = dinfo.output_width * dinfo.output_components * sizeof(JSAMPLE);
         int frameSize = rowSize * dinfo.output_height;
-        if ((frameSize % 2) != 0)
-            frameSize++;
+        //if ((frameSize % 2) != 0)
+        //    frameSize++;
 
         frameArray = gcnew PinnedByteArray(frameSize);
         unsigned char* framePtr = (unsigned char*)(void*)frameArray->Pointer;
@@ -498,11 +498,11 @@ void JPEGCODEC::Decode(DicomPixelData^ oldPixelData, DicomPixelData^ newPixelDat
         jpeg_destroy_decompress(&dinfo);
 
         IByteBuffer^ buffer;
-        if (frameArray->Count >= (1 * 1024 * 1024) || oldPixelData->NumberOfFrames > 1)
+        if (frameArray->Count >= (2 * 2048 * 2048) || oldPixelData->NumberOfFrames > 1)
             buffer = gcnew TempFileBuffer(frameArray->Data);
         else
             buffer = gcnew MemoryByteBuffer(frameArray->Data);
-        buffer = EvenLengthBuffer::Create(buffer);
+        //buffer = EvenLengthBuffer::Create(buffer);
         
         if (newPixelData->PlanarConfiguration == PlanarConfiguration::Planar && newPixelData->SamplesPerPixel > 1) {
             if (oldPixelData->SamplesPerPixel != 3 || oldPixelData->BitsStored > 8)

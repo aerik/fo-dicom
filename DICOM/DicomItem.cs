@@ -18,6 +18,9 @@ namespace Dicom
 
         public DicomTag Tag { get; internal set; }
 
+        //OPTIONAL stream position of element, Aerik
+        public long StreamPosition { get; internal set; }
+
         public abstract DicomVR ValueRepresentation { get; }
 
         public int CompareTo(DicomItem other)

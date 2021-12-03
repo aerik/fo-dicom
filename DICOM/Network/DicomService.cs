@@ -34,6 +34,10 @@ namespace Dicom.Network
 
         private readonly INetworkStream _network;
 
+        private readonly object _networkCounterLock = new object();
+
+        private int _networkCounter = 0;
+
         private readonly object _lock;
 
         private volatile bool _writing;
@@ -58,6 +62,8 @@ namespace Dicom.Network
 
         private readonly object _SpeedLocker = new object();
         private DateTime _SpeedCheckTime = DateTime.Now;
+        private DateTime _LastNetworkSend = DateTime.Now;
+        private DateTime _LastNetworkReceive = DateTime.Now;
 
         private long _BytesSentCounter = 0;
         private double _NetworkSentMs = 0;
@@ -104,7 +110,12 @@ namespace Dicom.Network
             {
                 lock (_SpeedLocker)
                 {
-                    return _SpeedCheckTime;
+                    //use transfer time since CalcSpeed could conceivably be called with zero bytes
+                    if(_LastNetworkReceive > _LastNetworkSend)
+                    {
+                        return _LastNetworkReceive;
+                    }
+                    return _LastNetworkSend;
                 }
             }
         }
@@ -189,6 +200,10 @@ namespace Dicom.Network
             if (disposing)
             {
                 _dimseStream?.Dispose();
+                lock (_networkCounterLock)
+                {
+                    if(_networkCounter > 0) Logger.Warn("Disposing network but network is busy");
+                }
                 _network?.Dispose();//this might not be "owned" by the DicomService... TBD
                 _pduQueueWatcher?.Dispose();
                 string logMsg = "";
@@ -210,7 +225,7 @@ namespace Dicom.Network
                     logMsg += "DicomSCP";
                 }
                 logMsg += " connection disposed, Association state: " + AssociationState.ToString();
-                if(AssociationState == DicomAssociationState.Released)
+                if(AssociationState == DicomAssociationState.Released || AssociationState == DicomAssociationState.None)
                 {
                     Logger.Info(logMsg);
                 }
@@ -223,20 +238,44 @@ namespace Dicom.Network
             _disposed = true;
         }
 
+        //private bool DisconnectIfStale()
+        //{
+        //    bool staleConnection = false;
+        //    DateTime minNetworkTime = DateTime.Now.AddMinutes(-5);
+        //    if (IsConnected)
+        //    {
+        //        lock (_SpeedLocker)
+        //        {
+        //            if (_LastNetworkReceive < minNetworkTime && _LastNetworkSend < minNetworkTime)
+        //            {
+        //                staleConnection = true;
+        //            }
+        //        }
+        //        if (staleConnection)
+        //        {
+        //            Logger.Warn("No network activity in 5 minutes, aborting");
+        //            TryCloseConnection(null, true);
+        //        }
+        //    }
+        //    return staleConnection;
+        //}
+
         private void CalcSpeed(long byteCount, double networkMs, bool dirIsUp, bool force = false)
         {
-            string logMsg = null;
+            string logMsg = null;            
             lock (_SpeedLocker)
             {
                 if (dirIsUp)
                 {
                     _BytesSentCounter += byteCount;
                     _NetworkSentMs += networkMs;
+                    if (byteCount > 0) _LastNetworkSend = DateTime.Now;
                 }
                 else
                 {
                     _BytesReceivedCounter += byteCount;
                     _NetworkReceivedMs += networkMs;
+                    if (byteCount > 0) _LastNetworkReceive = DateTime.Now;
                 }
                 TimeSpan ts = DateTime.Now - _SpeedCheckTime;
                 double totalMs = ts.TotalMilliseconds;
@@ -377,7 +416,9 @@ namespace Dicom.Network
                 try
                 {
                     DateTime start = DateTime.Now;
+                    lock (_networkCounterLock) _networkCounter++;
                     await _network.AsStream().WriteAsync(buffer, 0, (int)ms.Length).ConfigureAwait(false);
+                    lock (_networkCounterLock) _networkCounter--;
                     TimeSpan elapsed = DateTime.Now - start;
                     CalcSpeed(ms.Length,elapsed.TotalMilliseconds,true);
                 }
@@ -421,34 +462,36 @@ namespace Dicom.Network
             }
         }
 
-        private async Task<int> ReadStreamAsync(Stream stream, byte[] buffer, int offset, int count, int timeoutMs)
-        {
-            //Task<int> readTask = Task<int>.Factory.StartNew(() => {
-            //    return stream.Read(buffer, offset, count);
-            //})
+        //private async Task<int> ReadStreamAsync(Stream stream, byte[] buffer, int offset, int count, int timeoutMs)
+        //{
+        //    //Task<int> readTask = Task<int>.Factory.StartNew(() => {
+        //    //    return stream.Read(buffer, offset, count);
+        //    //})
 
-            if (stream.CanRead)
-            {
-                DateTime start = DateTime.Now;
-                Task<int> readTask = stream.ReadAsync(buffer, offset, count);
-                Task delayTask = Task.Delay(timeoutMs);
-                Task task = await Task.WhenAny(readTask, delayTask);
+        //    if (stream.CanRead)
+        //    {
+        //        DateTime start = DateTime.Now;
+        //        Task<int> readTask = stream.ReadAsync(buffer, offset, count);
+        //        Task delayTask = Task.Delay(timeoutMs);
+        //        Task task = await Task.WhenAny(readTask, delayTask);
 
-                if (task == readTask)
-                {
-                    int numBytes = readTask.Result;
-                    TimeSpan elapsed = DateTime.Now - start;
-                    CalcSpeed(numBytes, elapsed.TotalMilliseconds, false);
-                    return numBytes;
-                }
-            }
-            return 0;
-        }
+        //        if (task == readTask)
+        //        {
+        //            int numBytes = readTask.Result;
+        //            TimeSpan elapsed = DateTime.Now - start;
+        //            CalcSpeed(numBytes, elapsed.TotalMilliseconds, false);
+        //            return numBytes;
+        //        }
+        //    }
+        //    return 0;
+        //}
 
         private int ReadStream(Stream stream, byte[] buffer, int offset, int count)
         {
             DateTime start = DateTime.Now;
+            lock (_networkCounterLock) _networkCounter++;
             int numBytes = stream.Read(buffer, offset, count);
+            lock (_networkCounterLock) _networkCounter--;
             TimeSpan elapsed = DateTime.Now - start;
             CalcSpeed(numBytes, elapsed.TotalMilliseconds, false);
             return numBytes;
@@ -469,7 +512,7 @@ namespace Dicom.Network
                         var buffer = new byte[6];
                         var count = 0;
                         if (stream.CanRead)
-                        {
+                        {                            
                             count = ReadStream(stream, buffer, 0, 6);
                             //count = await ReadStreamAsync(stream, buffer, 0, 6, readTimeoutMs).ConfigureAwait(false);
                             //count = await stream.ReadAsync(buffer, 0, 6).ConfigureAwait(false);
@@ -703,15 +746,16 @@ namespace Dicom.Network
                             if (_dimse.Type == DicomCommandField.CStoreRequest)
                             {
                                 var pc = Association.PresentationContexts.FirstOrDefault(x => x.ID == pdv.PCID);
-
+                                var sopUid = _dimse.Command.Get<DicomUID>(DicomTag.AffectedSOPInstanceUID);
                                 var file = new DicomFile();
                                 file.FileMetaInfo.MediaStorageSOPClassUID = pc.AbstractSyntax;
-                                file.FileMetaInfo.MediaStorageSOPInstanceUID =
-                                    _dimse.Command.Get<DicomUID>(DicomTag.AffectedSOPInstanceUID);
+                                file.FileMetaInfo.MediaStorageSOPInstanceUID = sopUid;
                                 file.FileMetaInfo.TransferSyntax = pc.AcceptedTransferSyntax;
                                 file.FileMetaInfo.ImplementationClassUID = Association.RemoteImplementationClassUID;
                                 file.FileMetaInfo.ImplementationVersionName = Association.RemoteImplementationVersion;
                                 file.FileMetaInfo.SourceApplicationEntityTitle = Association.CallingAE;
+                                file.Dataset.Add(DicomTag.SOPClassUID, pc.AbstractSyntax);
+                                file.Dataset.Add(DicomTag.SOPInstanceUID, sopUid);
 
                                 CreateCStoreReceiveStream(file);
                             }
@@ -1180,7 +1224,7 @@ namespace Dicom.Network
                 if(msg is DicomRequest)
                 {
                     DicomRequest req = msg as DicomRequest;
-                    if (req.OnBeforeSendRequest != null) req.OnBeforeSendRequest();
+                    req.OnBeforeSendRequest?.Invoke();
                 }
 
                 var dimse = new Dimse { Message = msg, PresentationContext = pc };
@@ -1258,8 +1302,7 @@ namespace Dicom.Network
                         _pending.Clear();
                         _pduQueueWatcher.Set();
                     }
-
-                    if (_pduQueue.Count > 0 || _msgQueue.Count > 0 || _pending.Count > 0)
+                    else if (_pduQueue.Count > 0 || _msgQueue.Count > 0 || _pending.Count > 0)
                     {
                         Logger.Warn(
                             "Queue(s) not empty, PDUs: {pduCount}, messages: {msgCount}, pending requests: {pendingCount}",
@@ -1287,7 +1330,9 @@ namespace Dicom.Network
                     }
                     logMsg += "DicomSCP";
                 }
-                logMsg += " connection ending, Association state: " + AssociationState.ToString();
+                logMsg += " connection ";
+                if (!String.IsNullOrEmpty(_RemoteHost)) logMsg += " from " + _RemoteHost;
+                logMsg += " ending, Association state: " + AssociationState.ToString();
                 if (exception != null)
                 {
                     logMsg += "; Error: ";
@@ -1300,7 +1345,7 @@ namespace Dicom.Network
                         logMsg += exception.Message;
                     }
                 }
-                if(AssociationState != DicomAssociationState.Released || exception != null)
+                if((AssociationState != DicomAssociationState.Released && AssociationState != DicomAssociationState.None) || exception != null)
                 {
                     Logger.Warn(logMsg);
                 }
@@ -1308,7 +1353,6 @@ namespace Dicom.Network
                 {
                     Logger.Info(logMsg);
                 }
-                CalcSpeed(0, 0, false, true);
                 lock (_lock) IsConnected = false;
                 (this as IDicomService)?.OnConnectionClosed(exception);
 
@@ -1403,6 +1447,8 @@ namespace Dicom.Network
             Logger.Info("{logId} -> Association release response", LogID);
             AssociationState = DicomAssociationState.Released;
             this.SendPDUAsync(new AReleaseRP()).Wait();
+            System.Threading.Thread.Sleep(500);
+            TryCloseConnection(null);
         }
 
         /// <summary>

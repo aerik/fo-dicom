@@ -135,7 +135,7 @@ namespace Dicom.IO.Reader
                     element = new DicomUnlimitedText(tag, _encodings.Peek(), data);
                     break;
                 default:
-                    throw new DicomDataException("Unhandled VR in DICOM parser observer: {0}", vr.Code);
+                    throw new DicomDataException("Unhandled VR in DICOM parser observer: {0} with tag {1} having size {2}",  vr.Code, tag, data.Size );
             }
 
             if (element.Tag == DicomTag.SpecificCharacterSet)
@@ -193,7 +193,7 @@ namespace Dicom.IO.Reader
             if (vr == DicomVR.OB) _fragment = new DicomOtherByteFragment(tag);
             else if (vr == DicomVR.OW) _fragment = new DicomOtherWordFragment(tag);
             else throw new DicomDataException("Unexpected VR found for DICOM fragment sequence: {0}", vr.Code);
-
+            _fragment.StreamPosition = source.Position;
             DicomDataset ds = _datasets.Peek();
             ds.AddOrUpdate(_fragment);
         }

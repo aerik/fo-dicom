@@ -610,6 +610,7 @@ namespace Dicom.IO.Reader
                         }
 
                         this.ParseItemSequence(source);
+                        //successfully parsed SQ datasets will have reset the state and this.length will equal zero
 
                         if (needtoChangeEndian)
                         {
@@ -618,7 +619,7 @@ namespace Dicom.IO.Reader
 
                         // Aeric Sylvan - https://github.com/rcd/fo-dicom/issues/62#issuecomment-46248073
                         // Fix reading of SQ with parsed VR of UN
-                        if (source.Position > last || this.length == 0)
+                        if (source.Position > last || this.length == 0 || parsedVR == DicomVR.SQ)
                         {
                             return true;
                         }

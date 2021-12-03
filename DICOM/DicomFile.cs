@@ -507,8 +507,22 @@ namespace Dicom
         /// <summary>
         /// Method to call before performing the actual saving.
         /// </summary>
+        /// <exception cref="DicomFileException">If file dataset does not contain at least a few required tags</exception>
         protected virtual void OnSave()
         {
+            //perform super minimal validation
+            var test1 = FileMetaInfo.ImplementationClassUID;
+            var test2 = FileMetaInfo.InternalTransferSyntax;
+            var test3 = FileMetaInfo.MediaStorageSOPInstanceUID;
+            
+            if (!this.Dataset.Contains(DicomTag.SOPInstanceUID))
+            {
+                throw new DicomFileException(this, "Unable to save file with no SOPInstanceUID");
+            }
+            if (!this.Dataset.Contains(DicomTag.SOPClassUID))
+            {
+                throw new DicomFileException(this, "Unable to save file with no SOPClassUID");
+            }
         }
 
         /// <summary>

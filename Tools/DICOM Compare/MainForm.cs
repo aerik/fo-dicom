@@ -22,6 +22,8 @@ namespace Dicom.Compare
 
         private static readonly Color Gray = Color.FromArgb(200, 200, 200);
 
+        private static readonly Color LightCyan = Color.FromKnownColor(KnownColor.LightCyan);
+
         private DicomFile _file1;
 
         private DicomFile _file2;
@@ -480,8 +482,16 @@ namespace Dicom.Compare
 
                 if (cbIgnoreUIDs.Checked && e1.ValueRepresentation == DicomVR.UI)
                 {
-                    var uid = (i1 as DicomElement).Get<DicomUID>(0);
-                    if (uid != null && (uid.Type == DicomUidType.SOPInstance || uid.Type == DicomUidType.Unknown)) c = Yellow;
+                    DicomElement ele1 = (i1 as DicomElement);
+                    if (ele1.Count > 0)
+                    {
+                        var uid = ele1.Get<DicomUID>(0);
+                        if (uid != null && (uid.Type == DicomUidType.SOPInstance || uid.Type == DicomUidType.Unknown)) c = Yellow;
+                    }
+                    else
+                    {
+                        c = LightCyan;
+                    }
                 }
 
                 if (cbIgnorePixelData.Checked && i1.Tag == DicomTag.PixelData) c = Yellow;
