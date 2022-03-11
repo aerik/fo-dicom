@@ -41,7 +41,7 @@ namespace Dicom.IO.Buffer
             return buffer;
         }
 
-        public void Clear()
+        public void Close()
         {
             this.Data = new byte[0];
         }

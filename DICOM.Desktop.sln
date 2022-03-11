@@ -99,6 +99,7 @@ Global
 		VetRocket\RocketPACS.Model\RocketPACS.Model.projitems*{770f6170-24cf-43ef-85c4-a30679e6b82c}*SharedItemsImports = 4
 		DICOM\DICOM.Shared.projitems*{a661d347-cf7d-4f36-8101-0544ae85eeec}*SharedItemsImports = 4
 		VetRocket\RocketPACS.Model\RocketPACS.Model.projitems*{ae3784ce-5b86-49c1-94b1-6fb375b9196f}*SharedItemsImports = 4
+		VetRocket\RocketPACS.Model\RocketPACS.Model.projitems*{bc657375-50c6-4074-b3e5-f329b602c4ba}*SharedItemsImports = 4
 		DICOM\DICOM.Shared.projitems*{f9539369-1ad0-43b0-a35c-b82f6755c247}*SharedItemsImports = 13
 	EndGlobalSection
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -434,8 +435,8 @@ Global
 		{45269003-4C6A-4A3F-AA33-01D37359F5F9} = {8746408F-FCB0-4241-893E-33D13B9F9FFD}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
-		SolutionGuid = {B13A243A-8191-4363-BFC6-E01D1966B7D5}
 		BuildVersion_UseGlobalSettings = True
+		SolutionGuid = {B13A243A-8191-4363-BFC6-E01D1966B7D5}
 	EndGlobalSection
 	GlobalSection(TestCaseManagementSettings) = postSolution
 		CategoryFile = DICOM.vsmdi

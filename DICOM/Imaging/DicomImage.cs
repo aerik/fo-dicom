@@ -253,17 +253,19 @@ namespace Dicom.Imaging
                 var transcoder = new DicomTranscoder(
                                      this.Dataset.InternalTransferSyntax,
                                      DicomTransferSyntax.ExplicitVRLittleEndian);
-                var buffer = transcoder.DecodeFrame(Dataset, frame);
+                _pixelData = transcoder.DecodePixelData(Dataset, frame);
 
-                // clone the dataset because modifying the pixel data modifies the dataset
-                var clone = Dataset.Clone();
-                clone.InternalTransferSyntax = DicomTransferSyntax.ExplicitVRLittleEndian;
+                //var buffer = transcoder.DecodeFrame(Dataset, frame);
 
-                var pixelData = DicomPixelData.Create(clone, true);
-                TrimDecodedPixelDataProperties(pixelData, Dataset.InternalTransferSyntax);
-                pixelData.AddFrame(buffer);
+                //// clone the dataset because modifying the pixel data modifies the dataset
+                //var clone = Dataset.Clone();
+                //clone.InternalTransferSyntax = DicomTransferSyntax.ExplicitVRLittleEndian;
 
-                _pixelData = PixelDataFactory.Create(pixelData, 0);
+                //var pixelData = DicomPixelData.Create(clone, true);
+                //TrimDecodedPixelDataProperties(pixelData, Dataset.InternalTransferSyntax);
+                //pixelData.AddFrame(buffer);
+
+                //_pixelData = PixelDataFactory.Create(pixelData, 0);
             }
             else
             {

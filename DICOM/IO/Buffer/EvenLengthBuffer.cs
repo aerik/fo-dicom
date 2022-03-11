@@ -76,5 +76,10 @@ namespace Dicom.IO.Buffer
             if ((buffer.Size & 1) == 1) return new EvenLengthBuffer(buffer);
             return buffer;
         }
+
+        public void Close()
+        {
+            Buffer.Close();
+        }
     }
 }

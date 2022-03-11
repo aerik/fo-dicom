@@ -1,25 +1,21 @@
 ﻿// Copyright (c) 2012-2017 fo-dicom contributors.
 // Licensed under the Microsoft Public License (MS-PL).
+using Dicom.IO.Buffer;
 
 namespace Dicom.Imaging.Codec
 {
     public enum DicomJpegLsInterleaveMode
     {
         None = 0,
-
         Line = 1,
-
         Sample = 2
     };
 
     public enum DicomJpegLsColorTransform
     {
         None = 0,
-
         HP1 = 1,
-
         HP2 = 2,
-
         HP3 = 3
     };
 
@@ -101,5 +97,10 @@ namespace Dicom.Imaging.Codec
             DicomPixelData oldPixelData,
             DicomPixelData newPixelData,
             DicomCodecParams parameters);
+
+        //public abstract IByteBuffer DecodeFrame(
+        //    DicomPixelData oldPixelData,
+        //    DicomCodecParams parameters,
+        //    int frameNumber);
     };
 }

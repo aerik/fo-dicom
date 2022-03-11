@@ -277,7 +277,7 @@ namespace Dicom.Network
                             }
                             else
                             {
-                                //should already be closed by check in CalcSpeed, but...
+                                //close connections with no recent activity
                                 DateTime lastActive = curClient.LastActivity;
                                 var elapsed = DateTime.Now - lastActive;
                                 if (elapsed.TotalMinutes > 10) // was one minute, too short

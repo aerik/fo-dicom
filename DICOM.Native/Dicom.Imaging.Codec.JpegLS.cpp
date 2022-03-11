@@ -99,9 +99,9 @@ namespace Dicom {
 					Array::Resize(jpegData, (int)jpegDataSize);
 
 					IByteBuffer^ buffer;
-					if (jpegDataSize >= (1 * 1024 * 1024) || oldPixelData->NumberOfFrames > 1)
-						buffer = gcnew TempFileBuffer(jpegData);
-					else
+					//if (jpegDataSize >= (1 * 1024 * 1024) || oldPixelData->NumberOfFrames > 1)
+					//	buffer = gcnew TempFileBuffer(jpegData);
+					//else
 						buffer = gcnew MemoryByteBuffer(jpegData);
 					buffer = EvenLengthBuffer::Create(buffer);
 					newPixelData->AddFrame(buffer);
@@ -123,9 +123,9 @@ namespace Dicom {
 					if (err != CharlsApiResultType::OK) throw gcnew DicomJpegLsCodecException(err);
 
 					IByteBuffer^ buffer;
-					if (frameData->Length >= (1 * 1024 * 1024) || oldPixelData->NumberOfFrames > 1)
-						buffer = gcnew TempFileBuffer(frameData);
-					else
+					//if (frameData->Length >= (1 * 1024 * 1024) || oldPixelData->NumberOfFrames > 1)
+					//	buffer = gcnew TempFileBuffer(frameData);
+					//else
 						buffer = gcnew MemoryByteBuffer(frameData);
 					buffer = EvenLengthBuffer::Create(buffer);
 					newPixelData->AddFrame(buffer);

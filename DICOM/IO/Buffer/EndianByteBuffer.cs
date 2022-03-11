@@ -69,5 +69,10 @@ namespace Dicom.IO.Buffer
             if (endian == Endian.LocalMachine || unitSize == 1) return buffer;
             return new EndianByteBuffer(buffer, endian, unitSize);
         }
+
+        public void Close()
+        {
+            Internal.Close();
+        }
     }
 }

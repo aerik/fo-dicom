@@ -1,6 +1,7 @@
 ﻿// Copyright (c) 2012-2017 fo-dicom contributors.
 // Licensed under the Microsoft Public License (MS-PL).
 
+using Dicom.Imaging.Codec;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -104,28 +105,46 @@ namespace Dicom.Network
             if (request is DicomCStoreRequest)
             {
                 var cstore = request as DicomCStoreRequest;
-
-                var pcs = _pc.Values.Where(x => x.AbstractSyntax == request.SOPClassUID);
-                if (cstore.TransferSyntax == DicomTransferSyntax.ImplicitVRLittleEndian)
-                {
-                    pcs = pcs.Where(x => x.GetTransferSyntaxes().Contains(DicomTransferSyntax.ImplicitVRLittleEndian));
-                }
-                else
-                {
-                    pcs = pcs.Where(x => x.AcceptedTransferSyntax == cstore.TransferSyntax);
-                }
-
-                var pc = pcs.FirstOrDefault();
+                DicomPresentationContext pc = UpdateExistingPresentationContext(cstore);                
                 if (pc == null)
                 {
+                    bool canTranscode = (!cstore.TransferSyntax.IsEncapsulated) || TranscoderManager.HasCodec(cstore.TransferSyntax);
+                    IList<DicomTransferSyntax> csptx = null;
+                    //see if the request explicitly define presentation context
+                    if (canTranscode && cstore.PresentationContext != null && cstore.PresentationContext.AbstractSyntax == cstore.SOPClassUID)
+                    {
+                        csptx = cstore.PresentationContext.GetTransferSyntaxes();
+                    }
                     var tx = new List<DicomTransferSyntax>();
-                    if (cstore.TransferSyntax != DicomTransferSyntax.ImplicitVRLittleEndian) tx.Add(cstore.TransferSyntax);
-                    if (cstore.AdditionalTransferSyntaxes != null) tx.AddRange(cstore.AdditionalTransferSyntaxes);
-                    //removed to allow for sending only a compressed transfer syntax if wanted
-                    //tx.Add(DicomTransferSyntax.ExplicitVRLittleEndian);
-                    //tx.Add(DicomTransferSyntax.ImplicitVRLittleEndian);
 
-                    Add(cstore.SOPClassUID, tx.ToArray());
+                    if (csptx != null)
+                    {
+                        foreach (DicomTransferSyntax pts in csptx)
+                        {
+                            //check if we can transcode TO the syntax...
+                            bool tsOkay = (!pts.IsEncapsulated) || TranscoderManager.HasCodec(pts);
+                            if (tsOkay && !tx.Contains(pts)) tx.Add(pts);
+                        }
+                    }
+                    if (tx.Count == 0)
+                    {
+                        tx.Add(cstore.TransferSyntax);
+                    }
+                    if (canTranscode)
+                    {
+                        if (cstore.AdditionalTransferSyntaxes != null)
+                        {
+                            foreach (var ats in cstore.AdditionalTransferSyntaxes)
+                            {
+                                bool tsOkay = (!ats.IsEncapsulated) || TranscoderManager.HasCodec(ats);
+                                if (tsOkay && !tx.Contains(ats)) tx.Add(ats);
+                            }
+                        }
+                        //moved to cstore initialization
+                        //if (!tx.Contains(DicomTransferSyntax.ExplicitVRLittleEndian)) tx.Add(DicomTransferSyntax.ExplicitVRLittleEndian);
+                        //if (!tx.Contains(DicomTransferSyntax.ImplicitVRLittleEndian)) tx.Add(DicomTransferSyntax.ImplicitVRLittleEndian);
+                    }
+                    if (tx.Count > 0) Add(cstore.SOPClassUID, tx.ToArray());
                 }
             }
             else
@@ -160,6 +179,62 @@ namespace Dicom.Network
                             DicomTransferSyntax.ImplicitVRLittleEndian);
                 }
             }
+        }
+
+        private DicomPresentationContext UpdateExistingPresentationContext(DicomCStoreRequest cstore)
+        {
+            DicomPresentationContext pc = null;
+            bool canTranscode = (!cstore.TransferSyntax.IsEncapsulated) || TranscoderManager.HasCodec(cstore.TransferSyntax); ;
+            //this checks against existing presentation contexts
+            var pcs = _pc.Values.Where(x => x.AbstractSyntax == cstore.SOPClassUID);
+            //see if the request explicitly define presentation context
+            if (canTranscode)
+            {
+                IList<DicomTransferSyntax> csptx = null;
+                if (cstore.PresentationContext != null && cstore.PresentationContext.AbstractSyntax == cstore.SOPClassUID)
+                {
+                    csptx = cstore.PresentationContext.GetTransferSyntaxes();
+                }
+                else
+                {
+                    csptx = new DicomTransferSyntax[] { cstore.TransferSyntax };
+                }
+                foreach (var pv in pcs)
+                {
+                    var pvtxs = pv.GetTransferSyntaxes();
+                    var matches = pvtxs.Intersect(csptx);
+                    if (matches.FirstOrDefault() != null)
+                    {
+                        pc = pv;
+                        var pctx = pc.GetTransferSyntaxes();
+                        var diff = pvtxs.Except(csptx);
+                        foreach (var dp in diff)
+                        {
+                            bool tsOkay = (!dp.IsEncapsulated) || TranscoderManager.HasCodec(dp);
+                            //assumes each transferSyntax in diff is unique
+                            if (tsOkay && !pctx.Contains(dp)) pc.AddTransferSyntax(dp);
+                        }                        
+                        break;
+                    }
+                }
+            }
+            else
+            {
+                if (cstore.TransferSyntax == DicomTransferSyntax.ImplicitVRLittleEndian)
+                {
+                    pcs = pcs.Where(x => x.GetTransferSyntaxes().Contains(DicomTransferSyntax.ImplicitVRLittleEndian));
+                }
+                else
+                {
+                    //this just gets the presentationcontext where the first one equals the cstore
+                    //assumes the first one is the cstore? 
+                    //could be smarter - find a presentationcontext with a *compatible* transfersyntax
+                    //force cstore.TransferSyntax if unable to transcode
+                    pcs = pcs.Where(x => x.AcceptedTransferSyntax == cstore.TransferSyntax);
+                }
+                pc = pcs.FirstOrDefault();//this is just a check to see if it found something
+            }
+            return pc;
         }
 
         /// <summary>

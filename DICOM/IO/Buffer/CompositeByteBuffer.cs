@@ -47,6 +47,15 @@ namespace Dicom.IO.Buffer
             }
         }
 
+        public void Close()
+        {
+            for (int i = 0; i < Buffers.Count; i++)
+            {
+                var buf = Buffers[i];
+                buf.Close();
+            }
+        }
+
         public byte[] GetByteRange(int offset, int count)
         {
             if(offset < 0 || count < 0)

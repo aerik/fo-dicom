@@ -212,9 +212,9 @@ namespace Dicom {
 					array<unsigned char>^ data = encoder->GetBuffer();
 
 					IByteBuffer^ buffer;
-					if (data->Length >= (1 * 1024 * 1024) || oldPixelData->NumberOfFrames > 1)
-						buffer = gcnew TempFileBuffer(data);
-					else
+					//if (data->Length >= (1 * 1024 * 1024) || oldPixelData->NumberOfFrames > 1)
+					//	buffer = gcnew TempFileBuffer(data);
+					//else
 						buffer = gcnew MemoryByteBuffer(data);
 					buffer = EvenLengthBuffer::Create(buffer);
 					newPixelData->AddFrame(buffer);
@@ -363,9 +363,9 @@ namespace Dicom {
 					}
 
 					IByteBuffer^ buffer;
-					if (frameData->Length >= (1 * 1024 * 1024) || oldPixelData->NumberOfFrames > 1)
-						buffer = gcnew TempFileBuffer(frameData);
-					else
+					//if (frameData->Length >= (1 * 1024 * 1024) || oldPixelData->NumberOfFrames > 1)
+					//	buffer = gcnew TempFileBuffer(frameData);
+					//else
 						buffer = gcnew MemoryByteBuffer(frameData);
 					buffer = EvenLengthBuffer::Create(buffer);
 					newPixelData->AddFrame(buffer);

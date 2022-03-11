@@ -30,5 +30,7 @@ namespace Dicom.IO.Buffer
         /// <param name="count">Number of bytes to return.</param>
         /// <returns>Requested sub-range of the <see name="Data"/> array.</returns>
         byte[] GetByteRange(int offset, int count);
+
+        void Close();
     }
 }

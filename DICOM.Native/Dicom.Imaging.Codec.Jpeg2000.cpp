@@ -210,9 +210,9 @@ namespace Dicom {
                             Marshal::Copy((IntPtr)cio->buffer, cbuf, 0, clen);
 
                             IByteBuffer^ buffer;
-                            if (clen >= (1 * 1024 * 1024) || oldPixelData->NumberOfFrames > 1)
-                                buffer = gcnew TempFileBuffer(cbuf);
-                            else
+                            //if (clen >= (1 * 1024 * 1024) || oldPixelData->NumberOfFrames > 1)
+                            //    buffer = gcnew TempFileBuffer(cbuf);
+                            //else
                                 buffer = gcnew MemoryByteBuffer(cbuf);
                             buffer = EvenLengthBuffer::Create(buffer);
                             newPixelData->AddFrame(buffer);
@@ -353,9 +353,9 @@ namespace Dicom {
                         }
 
                         IByteBuffer^ buffer;
-                        if (destArray->Count >= (1 * 1024 * 1024) || oldPixelData->NumberOfFrames > 1)
-                            buffer = gcnew TempFileBuffer(destArray->Data);
-                        else
+                        //if (destArray->Count >= (1 * 1024 * 1024) || oldPixelData->NumberOfFrames > 1)
+                        //    buffer = gcnew TempFileBuffer(destArray->Data);
+                        //else
                             buffer = gcnew MemoryByteBuffer(destArray->Data);
                         buffer = EvenLengthBuffer::Create(buffer);
                         newPixelData->AddFrame(buffer);

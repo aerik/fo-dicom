@@ -34,6 +34,11 @@ namespace Dicom.IO.Buffer
             }
         }
 
+        public void Close()
+        {
+            if (File != null && File.IsTempFile) TemporaryFileRemover.Delete(File);
+        }
+
         public byte[] GetByteRange(int offset, int count)
         {
             return File.GetByteRange((int)Position + offset, count);

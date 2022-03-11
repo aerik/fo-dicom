@@ -1,6 +1,8 @@
 ﻿// Copyright (c) 2012-2017 fo-dicom contributors.
 // Licensed under the Microsoft Public License (MS-PL).
 
+using Dicom.IO.Buffer;
+
 namespace Dicom.Imaging.Codec
 {
     public class DicomJpeg2000Params : DicomCodecParams
@@ -151,5 +153,10 @@ namespace Dicom.Imaging.Codec
             DicomPixelData oldPixelData,
             DicomPixelData newPixelData,
             DicomCodecParams parameters);
+
+        //public abstract IByteBuffer DecodeFrame(
+        //    DicomPixelData oldPixelData,
+        //    DicomCodecParams parameters,
+        //    int frameNumber);
     }
 }

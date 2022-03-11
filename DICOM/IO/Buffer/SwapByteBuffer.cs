@@ -52,6 +52,11 @@ namespace Dicom.IO.Buffer
             }
         }
 
+        public void Close()
+        {
+            Internal.Close();
+        }
+
         public byte[] GetByteRange(int offset, int count)
         {
             byte[] data = Internal.GetByteRange(offset, count);

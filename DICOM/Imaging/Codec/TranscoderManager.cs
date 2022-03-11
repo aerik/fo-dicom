@@ -48,6 +48,11 @@ namespace Dicom.Imaging.Codec
             implementation = impl;
         }
 
+        public static bool HasCodec(DicomTransferSyntax syntax)
+        {
+            return Codecs.ContainsKey(syntax);
+        }
+
         /// <summary>
         /// Get codec associated with specified DICOM transfer syntax.
         /// </summary>

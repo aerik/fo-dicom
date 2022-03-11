@@ -70,6 +70,11 @@ namespace Dicom.IO.Buffer
             return range;
         }
 
+        public void Close()
+        {
+            _buffer = null;
+        }
+
         /// <summary>
         /// Gets the size of the buffered data. Throws an InvalidOperationException if the Data has not been set.
         /// </summary>

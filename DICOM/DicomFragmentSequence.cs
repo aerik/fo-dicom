@@ -40,6 +40,7 @@ namespace Dicom
         {
             if (_offsetTable == null)
             {
+                //first fragment is always the offset table, see https://dicom.nema.org/dicom/2013/output/chtml/part05/sect_A.4.html
                 var en = ByteBufferEnumerator<uint>.Create(fragment);
                 _offsetTable = new List<uint>(en);
                 return;

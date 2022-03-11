@@ -39,7 +39,7 @@ namespace Dicom
     /// <summary>
     /// Representation of one DICOM file.
     /// </summary>
-    public class DicomFile
+    public class DicomFile : IDisposable
     {
         #region CONSTRUCTORS
         //copied from DicomFileReader
@@ -226,6 +226,7 @@ namespace Dicom
 
                     df.Dataset.InternalTransferSyntax = reader.Syntax;
 
+                    df.PreprocessFileMetaInformation();
                     return df;
                 }
             }
@@ -285,6 +286,7 @@ namespace Dicom
 
                 df.Dataset.InternalTransferSyntax = reader.Syntax;
 
+                df.PreprocessFileMetaInformation();
                 return df;
             }
             catch (Exception e)
@@ -351,6 +353,7 @@ namespace Dicom
                     df.Format = reader.FileFormat;
                     df.Dataset.InternalTransferSyntax = reader.Syntax;
 
+                    df.PreprocessFileMetaInformation();
                     return df;
                 }
             }
@@ -411,6 +414,7 @@ namespace Dicom
                 df.Format = reader.FileFormat;
                 df.Dataset.InternalTransferSyntax = reader.Syntax;
 
+                df.PreprocessFileMetaInformation();
                 return df;
             }
             catch (Exception e)
@@ -495,6 +499,7 @@ namespace Dicom
 
                     df.Dataset.InternalTransferSyntax = reader.Syntax;
 
+                    df.PreprocessFileMetaInformation();
                     return df;
                 }
             }
@@ -541,6 +546,15 @@ namespace Dicom
                                     ? new DicomFileMetaInformation(this.Dataset)
                                     : new DicomFileMetaInformation(this.FileMetaInfo);
 
+            this.FileMetaInfo.Version = new byte[] { 0x00, 0x01 };
+            if (this.Dataset.Contains(DicomTag.SOPClassUID))
+            {
+                this.FileMetaInfo.MediaStorageSOPClassUID = this.Dataset.Get<DicomUID>(DicomTag.SOPClassUID);
+            }
+            if (this.Dataset.Contains(DicomTag.SOPInstanceUID))
+            {
+                this.FileMetaInfo.MediaStorageSOPInstanceUID = this.Dataset.Get<DicomUID>(DicomTag.SOPInstanceUID);
+            }
             //make sure there are no duplicates between Dataset and FileMetaInfo
             List<DicomTag> toDelete = new List<DicomTag>();
             foreach(DicomItem item in this.Dataset)
@@ -564,6 +578,49 @@ namespace Dicom
                 this.Dataset.Remove(tag);
             }
         }
+
+        #region IDisposable Support
+        private bool disposedValue = false; // To detect redundant calls
+
+        protected virtual void Dispose(bool disposing)
+        {
+            if (!disposedValue)
+            {
+                if (disposing)
+                {
+                    try
+                    {
+                        if (File.IsTempFile)
+                        {
+                            TemporaryFileRemover.Delete(File);
+                        }
+                        Dataset.Close(true);
+                    }
+                    catch { }
+                }
+
+                // TODO: free unmanaged resources (unmanaged objects) and override a finalizer below.
+                // TODO: set large fields to null.
+
+                disposedValue = true;
+            }
+        }
+
+        // TODO: override a finalizer only if Dispose(bool disposing) above has code to free unmanaged resources.
+        // ~DicomFile() {
+        //   // Do not change this code. Put cleanup code in Dispose(bool disposing) above.
+        //   Dispose(false);
+        // }
+
+        // This code added to correctly implement the disposable pattern.
+        public void Dispose()
+        {
+            // Do not change this code. Put cleanup code in Dispose(bool disposing) above.
+            Dispose(true);
+            // TODO: uncomment the following line if the finalizer is overridden above.
+            // GC.SuppressFinalize(this);
+        }
+        #endregion
 
         #endregion
     }

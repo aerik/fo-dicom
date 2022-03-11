@@ -26,8 +26,15 @@ namespace Dicom.Dump
 
         public DisplayForm(DicomFile file)
         {
-            _file = file;
-            InitializeComponent();
+            try
+            {
+                _file = file;
+                InitializeComponent();
+            }
+            catch (Exception e)
+            {
+                OnException(e);
+            }
         }
 
         protected override void OnLoad(EventArgs e)
@@ -76,8 +83,9 @@ namespace Dicom.Dump
             try
             {
                 var image = (DicomImage)state;
-
-                pbDisplay.Image = image.RenderImage(_frame).As<Image>();
+                var rendered = image.RenderImage(_frame);
+                var bmp = new Bitmap(rendered.AsBitmap());
+                pbDisplay.Image = bmp;
 
                 if (_grayscale)
                     Text = String.Format(
@@ -85,7 +93,7 @@ namespace Dicom.Dump
                         Math.Round(image.Scale, 1),
                         image.WindowCenter,
                         image.WindowWidth);
-                else Text = String.Format("DICOM Image Display [scale: {0}]", Math.Round(image.Scale, 1));
+                else Text = String.Format("DICOM Image Display [scale: {0} frame:{1}]", Math.Round(image.Scale, 1), _frame);
             }
             catch (Exception e)
             {
@@ -95,27 +103,34 @@ namespace Dicom.Dump
 
         protected void SizeForImage(object state)
         {
-            var image = (DicomImage)state;
-
-            Size max = SystemInformation.WorkingArea.Size;
-
-            int maxW = max.Width - (Width - pbDisplay.Width);
-            int maxH = max.Height - (Height - pbDisplay.Height);
-
-            if (image.Width > maxW || image.Height > maxH) image.Scale = Math.Min((double)maxW / (double)image.Width, (double)maxH / (double)image.Height);
-            else image.Scale = 1.0;
-
-            Width = (int)(image.Width * image.Scale) + (Width - pbDisplay.Width);
-            Height = (int)(image.Height * image.Scale) + (Height - pbDisplay.Height);
-
-            if (Width >= (max.Width * 0.99) || Height >= (max.Height * 0.99)) CenterToScreen(); // center very large images on the screen
-            else
+            try
             {
-                CenterToParent();
-                if (Bottom > max.Height) Top -= Bottom - max.Height;
-                if (Top < 0) Top = 0;
-                if (Right > max.Width) Left -= Right - max.Width;
-                if (Left < 0) Left = 0;
+                var image = (DicomImage)state;
+
+                Size max = SystemInformation.WorkingArea.Size;
+
+                int maxW = max.Width - (Width - pbDisplay.Width);
+                int maxH = max.Height - (Height - pbDisplay.Height);
+
+                if (image.Width > maxW || image.Height > maxH) image.Scale = Math.Min((double)maxW / (double)image.Width, (double)maxH / (double)image.Height);
+                else image.Scale = 1.0;
+
+                Width = (int)(image.Width * image.Scale) + (Width - pbDisplay.Width);
+                Height = (int)(image.Height * image.Scale) + (Height - pbDisplay.Height);
+
+                if (Width >= (max.Width * 0.99) || Height >= (max.Height * 0.99)) CenterToScreen(); // center very large images on the screen
+                else
+                {
+                    CenterToParent();
+                    if (Bottom > max.Height) Top -= Bottom - max.Height;
+                    if (Top < 0) Top = 0;
+                    if (Right > max.Width) Left -= Right - max.Width;
+                    if (Left < 0) Left = 0;
+                }
+            }
+            catch (Exception e)
+            {
+                OnException(e);
             }
         }
 
@@ -169,7 +184,10 @@ namespace Dicom.Dump
             if (e.KeyCode == Keys.Right)
             {
                 _frame++;
-                if (_frame >= _image.NumberOfFrames) _frame--;
+                if (_frame >= _image.NumberOfFrames)
+                {
+                    _frame--;
+                }
                 DisplayImage(_image);
                 return;
             }
@@ -177,7 +195,10 @@ namespace Dicom.Dump
             if (e.KeyCode == Keys.Left)
             {
                 _frame--;
-                if (_frame < 0) _frame++;
+                if (_frame < 0)
+                {
+                    _frame = (int)_image.NumberOfFrames - 1;
+                }
                 DisplayImage(_image);
                 return;
             }

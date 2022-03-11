@@ -23,6 +23,8 @@ namespace Dicom
 
         private DicomTransferSyntax _syntax;
 
+        private bool _isDisposed = false; // To detect redundant calls
+
         #endregion
 
         #region CONSTRUCTORS
@@ -353,6 +355,45 @@ namespace Dicom
         {
             _items.Clear();
             return this;
+        }
+
+        public void Close(bool suppressErrors = false)
+        {
+            var logger = Dicom.Log.LogManager.GetLogger("DicomDataset");
+            foreach (DicomItem item in this)
+            {
+                if (item == null) continue;
+                try
+                {
+                    if (item is DicomSequence)
+                    {
+                        DicomSequence seq = (DicomSequence)item;
+                        foreach (DicomDataset sqSet in seq.Items)
+                        {
+                            sqSet?.Close();
+                        }
+                    }
+                    else if (item is DicomElement)
+                    {
+                        DicomElement ele = item as DicomElement;
+                        ele.Buffer.Close();
+                    }
+                    else if (item is DicomFragmentSequence)
+                    {
+                        DicomFragmentSequence dfs = item as DicomFragmentSequence;
+                        foreach (var buf in dfs.Fragments)
+                        {
+                            buf?.Close();
+                        }
+                    }
+                }
+                catch (Exception x)
+                {
+                    logger.Warn("Exception closing dataset: " + x.Message);
+                    if (!suppressErrors) throw;
+                }
+            }
+            Clear();
         }
 
         /// <summary>

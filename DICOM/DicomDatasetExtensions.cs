@@ -3,6 +3,7 @@
 
 namespace Dicom
 {
+    using Dicom.IO.Buffer;
     using System;
     using System.Collections.Generic;
     using System.Linq;
@@ -63,5 +64,59 @@ namespace Dicom
         {
             return dataset.Where(x => x.Tag.Group == group && x.Tag.Element != 0x0000);
         }
+
+        public static IList<IByteBuffer> GetContainedBuffers(this DicomDataset dataset)
+        {
+            List<IByteBuffer> buffers = new List<IByteBuffer>();
+            foreach (DicomItem item in dataset)
+            {
+                if (item is DicomSequence)
+                {
+                    DicomSequence seq = (DicomSequence)item;
+                    foreach (DicomDataset sqSet in seq.Items)
+                    {
+                        buffers.AddRange(sqSet.GetContainedBuffers());
+                    }
+                }
+                else if (item is DicomElement)
+                {
+                    DicomElement ele = item as DicomElement;
+                    buffers.AddRange(GetRootBuffers(ele.Buffer));
+                }
+                else if (item is DicomFragmentSequence)
+                {
+                    DicomFragmentSequence dfs = item as DicomFragmentSequence;
+                    foreach(var buf in dfs.Fragments)
+                    {
+                        buffers.AddRange(GetRootBuffers(buf));
+                    }
+                }
+            }
+            return buffers;
+        }
+
+        public static IByteBuffer[] GetRootBuffers(IByteBuffer curBuffer)
+        {
+            List<IByteBuffer> buffers = new List<IByteBuffer>();
+            if(curBuffer is CompositeByteBuffer)
+            {
+                CompositeByteBuffer cbuf = (CompositeByteBuffer)curBuffer;
+                foreach(var buf in cbuf.Buffers)
+                {
+                    buffers.AddRange(GetRootBuffers(buf));
+                }
+            }
+            else if(curBuffer is RangeByteBuffer)
+            {
+                buffers.AddRange(GetRootBuffers(((RangeByteBuffer)curBuffer).Internal));
+            }
+            else
+            {
+                buffers.Add(curBuffer);
+            }
+            return buffers.ToArray();
+        }
+
+
     }
 }

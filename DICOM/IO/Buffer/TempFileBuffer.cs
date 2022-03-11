@@ -8,10 +8,10 @@ namespace Dicom.IO.Buffer
     /// <summary>
     /// Temporary file-based byte buffer.
     /// </summary>
-    public sealed class TempFileBuffer : IByteBuffer
+    internal sealed class TempFileBuffer : IByteBuffer
     {
         #region FIELDS
-
+        private bool _deleted = false;
         private readonly IFileReference file;
         public IFileReference File
         {
@@ -32,6 +32,7 @@ namespace Dicom.IO.Buffer
         public TempFileBuffer(byte[] data)
         {
             this.file = TemporaryFile.Create();
+            Dicom.Log.LogManager.GetLogger("TempFileBuffer").Debug("Created temp file " + this.file.Name);
             this.Size = (uint)data.Length;
 
             using (var stream = this.file.OpenWrite())
@@ -83,6 +84,10 @@ namespace Dicom.IO.Buffer
         /// <returns>Requested sub-range of the <see name="Data"/> array.</returns>
         public byte[] GetByteRange(int offset, int count)
         {
+            if (_deleted)
+            {
+                throw new FileNotFoundException("Temporary file has already been deleted");
+            }
             var buffer = new byte[count];
 
             using (var fs = this.file.OpenRead())
@@ -92,6 +97,12 @@ namespace Dicom.IO.Buffer
             }
 
             return buffer;
+        }
+
+        public void Close()
+        {
+            _deleted = true;
+            TemporaryFileRemover.Delete(File);
         }
 
         #endregion

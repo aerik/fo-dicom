@@ -22,6 +22,7 @@ namespace Dicom.Dump
     public partial class MainForm : Form
     {
         private DicomFile _file;
+        private Form _childForm = null;
 
         public MainForm()
         {
@@ -292,15 +293,24 @@ namespace Dicom.Dump
 
         private void OnClickView(object sender, EventArgs e)
         {
+            if (_childForm != null) _childForm.Dispose();
             if (IsStructuredReport)
             {
-                var form = new ReportForm(_file);
-                form.ShowDialog(this);
+                _childForm = new ReportForm(_file);
+                _childForm.ShowDialog(this);
             }
             else
             {
-                var form = new DisplayForm(_file);
-                form.ShowDialog(this);
+                try
+                {
+                    _childForm = new DisplayForm(_file);
+                    //_childForm.ShowDialog(this);
+                    _childForm.Show();
+                }
+                catch (Exception x)
+                {
+                    MessageBox.Show(x.Message);
+                }
             }
         }
 

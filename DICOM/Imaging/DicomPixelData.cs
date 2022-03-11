@@ -105,6 +105,7 @@ namespace Dicom.Imaging
             }
             set
             {
+                _BytesAllocated = -1;
                 Dataset.AddOrUpdate(new DicomUnsignedShort(DicomTag.BitsAllocated, value));
             }
         }
@@ -233,16 +234,20 @@ namespace Dicom.Imaging
             }
         }
 
+        private int _BytesAllocated = -1;
         /// <summary>
         /// Number of bytes allocated per pixel sample
         /// </summary>
         public int BytesAllocated
         {
             get
-            {
-                int bytes = BitsAllocated / 8;
-                if ((BitsAllocated % 8) > 0) bytes++;
-                return bytes;
+            {   if (_BytesAllocated < 0)
+                {
+                    int bytes = BitsAllocated / 8;
+                    if ((BitsAllocated % 8) > 0) bytes++;
+                    _BytesAllocated = bytes;
+                }
+                return _BytesAllocated;
             }
         }
 
@@ -411,7 +416,11 @@ namespace Dicom.Imaging
 
             public override void AddFrame(IByteBuffer data)
             {
-                if (!(Element.Buffer is CompositeByteBuffer)) throw new DicomImagingException("Expected pixel data element to have a CompositeByteBuffer");
+                if (!(Element.Buffer is CompositeByteBuffer))
+                {
+                    string strType = Element.Buffer == null ? "(null)" : Element.Buffer.GetType().Name;
+                    throw new DicomImagingException("Expected pixel data element to have a CompositeByteBuffer, found " + strType);
+                }
 
                 CompositeByteBuffer buffer = Element.Buffer as CompositeByteBuffer;
                 buffer.Buffers.Add(data);
@@ -463,7 +472,11 @@ namespace Dicom.Imaging
 
             public override void AddFrame(IByteBuffer data)
             {
-                if (!(Element.Buffer is CompositeByteBuffer)) throw new DicomImagingException("Expected pixel data element to have a CompositeByteBuffer.");
+                if (!(Element.Buffer is CompositeByteBuffer))
+                {
+                    string strType = Element.Buffer == null ? "(null)" : Element.Buffer.GetType().Name;
+                    throw new DicomImagingException("Expected pixel data element to have a CompositeByteBuffer, found " + strType);
+                }
 
                 CompositeByteBuffer buffer = Element.Buffer as CompositeByteBuffer;
 
@@ -504,56 +517,99 @@ namespace Dicom.Imaging
 
             public override IByteBuffer GetFrame(int frame)
             {
-                if (frame == -1) return new CompositeByteBuffer(Element.Fragments.ToArray()); 
-                if (frame < 0 || frame >= NumberOfFrames) throw new IndexOutOfRangeException("Requested frame out of range!");
+                //special case - get the entire buffer
+                if (frame == -1) return new CompositeByteBuffer(Element.Fragments.ToArray());
+                //assume that if NumberOfFrames is broken, there are no MORE frames than NumberOfFrames
+                if (frame < -1) throw new ArgumentOutOfRangeException("frame", frame, "Frame index cannot be negative");
+                if (frame >= NumberOfFrames) throw new ArgumentOutOfRangeException("frame", frame, "Frame index must be less than NumberOfFrames: " + NumberOfFrames);
 
                 IByteBuffer buffer = null;
 
-                if (NumberOfFrames == 1)
+                uint numFrames = NumberOfFrames;
+                //see if there's an offset table, if so, we must use it
+                if (Element.OffsetTable.Count > 0)
                 {
-                    if (Element.Fragments.Count == 1) buffer = Element.Fragments[0];
-                    else buffer = new CompositeByteBuffer(Element.Fragments.ToArray());
-                }
-                else if (Element.Fragments.Count >= NumberOfFrames) buffer = Element.Fragments[frame];
-                else if (Element.OffsetTable.Count == NumberOfFrames)
-                {
-                    uint start = Element.OffsetTable[frame];
-                    uint stop = (Element.OffsetTable.Count == (frame + 1))
-                                    ? uint.MaxValue
-                                    : Element.OffsetTable[frame + 1];
-
-                    var composite = new CompositeByteBuffer();
-
-                    uint pos = 0;
-                    int frag = 0;
-
-                    while (pos < start && frag < Element.Fragments.Count)
+                    numFrames = (uint)Element.OffsetTable.Count;
+                    if (frame >= numFrames)
                     {
-                        pos += 8;
-                        pos += Element.Fragments[frag].Size;
-                        frag++;
+                        throw new IndexOutOfRangeException("Requested frame offset ("+frame+") out of range ("+ numFrames + ") !");
                     }
-
-                    if (pos != start) throw new DicomImagingException("Fragment start position does not match offset table.");
-
-                    while (pos < stop && frag < Element.Fragments.Count)
+                    else
                     {
-                        composite.Buffers.Add(Element.Fragments[frag]);
+                        //if everything agrees there is one frame, keep it simple
+                        if (frame == 0 && numFrames == 1 && Element.Fragments.Count == 1)
+                        {
+                            buffer = buffer = Element.Fragments[0];
+                        }
+                        else if (Element.Fragments.Count == numFrames)//not sure if this is exactly correct, but it is convenient
+                        {
+                            buffer = Element.Fragments[frame];
+                        }
+                        else
+                        {
+                            uint start = Element.OffsetTable[frame];
+                            uint stop = (Element.OffsetTable.Count == (frame + 1))
+                                            ? uint.MaxValue
+                                            : Element.OffsetTable[frame + 1];
 
-                        pos += 8;
-                        pos += Element.Fragments[frag].Size;
-                        frag++;
+                            var composite = new CompositeByteBuffer();
+
+                            uint pos = 0;
+                            int frag = 0;
+
+                            while (pos < start && frag < Element.Fragments.Count)
+                            {
+                                pos += 8;
+                                pos += Element.Fragments[frag].Size;
+                                frag++;
+                            }
+
+                            if (pos != start) throw new DicomImagingException("Fragment start position does not match offset table.");
+
+                            while (pos < stop && frag < Element.Fragments.Count)
+                            {
+                                composite.Buffers.Add(Element.Fragments[frag]);
+
+                                pos += 8;
+                                pos += Element.Fragments[frag].Size;
+                                frag++;
+                            }
+
+                            if (pos < stop && stop != uint.MaxValue)
+                            {
+                                string dets = "Frame: " + frame + "/"+numFrames + "/"+Element.Fragments.Count + " pos: " + pos + " stop: " + stop;
+
+                                throw new DicomImagingException(
+                                    "Image frame truncated while reading fragments from offset table.",new Exception(dets));
+                            }
+                            buffer = composite;
+                        }
                     }
-
-                    if (pos < stop && stop != uint.MaxValue)
-                        throw new DicomImagingException(
-                            "Image frame truncated while reading fragments from offset table.");
-
-                    buffer = composite;
                 }
                 else
-                    throw new DicomImagingException(
-                        "Support for multi-frame images with varying fragment sizes and no offset table has not been implemented.");
+                {
+                    //no offset table
+                    //not sure why this is necessary... mulit-fragment image with no offset table?
+                    if (NumberOfFrames == 1 && frame == 0)
+                    {
+                        if (Element.Fragments.Count == 1) buffer = Element.Fragments[0];
+                        else buffer = new CompositeByteBuffer(Element.Fragments.ToArray());
+                    }
+                    else
+                    {
+                        numFrames = (uint)Element.Fragments.Count;
+                        if (frame >= numFrames)
+                        {
+                            throw new IndexOutOfRangeException("Requested frame (" + frame + ") out of range (" + numFrames + ") !");
+                        }
+                        else
+                        {
+                            buffer = Element.Fragments[frame];//fix for mangled NumberOfFrames
+                        }
+                    }
+                }
+
+                if (buffer == null) buffer = new EmptyBuffer();//could throw instead...?
 
                 // mainly for GE Private Implicit VR Little Endian
                 if (!Syntax.IsEncapsulated && BitsAllocated == 16 && Syntax.SwapPixelData) buffer = new SwapByteBuffer(buffer, 2);

@@ -39,6 +39,11 @@ namespace Dicom.IO.Buffer
             }
         }
 
+        public void Close()
+        {
+            //nothing - does not own the stream
+        }
+
         public byte[] GetByteRange(int offset, int count)
         {
             if (offset == 0 && count == Size) return Data;

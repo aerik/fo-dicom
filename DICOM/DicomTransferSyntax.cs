@@ -136,7 +136,7 @@ namespace Dicom
                                                                                        Endian.Little
                                                                                };
 
-        /// <summary>JPEG Baseline (Process 1)</summary>
+        /// <summary>JPEG Baseline (Process 1): Default Transfer Syntax for Lossy JPEG 8 Bit Image Compression</summary>
         public static DicomTransferSyntax JPEGProcess1 = new DicomTransferSyntax
                                                              {
                                                                  UID = DicomUID.JPEGBaseline1,
@@ -438,7 +438,7 @@ namespace Dicom
                                                           Endian = Endian.Little
                                                       };
 
-        /// <summary>MPEG2 Main Profile @ Main Level</summary>
+        /// <summary>Transfer Syntax: MPEG-4 AVC/H.264 High Profile / Level 4.1</summary>
         public static DicomTransferSyntax MP4HighProfileLevel41 = new DicomTransferSyntax
                                                     {
                                                         UID = DicomUID.MPEG4AVCH264HighProfileLevel41,

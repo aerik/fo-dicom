@@ -84,6 +84,7 @@ namespace Dicom.Network
         /// <param name="log">Logger</param>
         protected DicomService(INetworkStream stream, Encoding fallbackEncoding, Logger log)
         {
+            AssociationState = DicomAssociationState.None;
             _network = stream;
             _RemoteHost = _network.RemoteHost;
             _lock = new object();
@@ -200,9 +201,10 @@ namespace Dicom.Network
             if (disposing)
             {
                 _dimseStream?.Dispose();
+                int nCount = 0;
                 lock (_networkCounterLock)
                 {
-                    if(_networkCounter > 0) Logger.Warn("Disposing network but network is busy");
+                    nCount = _networkCounter;
                 }
                 _network?.Dispose();//this might not be "owned" by the DicomService... TBD
                 _pduQueueWatcher?.Dispose();
@@ -225,6 +227,7 @@ namespace Dicom.Network
                     logMsg += "DicomSCP";
                 }
                 logMsg += " connection disposed, Association state: " + AssociationState.ToString();
+                logMsg += " n=" + nCount;
                 if(AssociationState == DicomAssociationState.Released || AssociationState == DicomAssociationState.None)
                 {
                     Logger.Info(logMsg);
@@ -461,31 +464,14 @@ namespace Dicom.Network
                 lock (_lock) _writing = false;
             }
         }
-
-        //private async Task<int> ReadStreamAsync(Stream stream, byte[] buffer, int offset, int count, int timeoutMs)
-        //{
-        //    //Task<int> readTask = Task<int>.Factory.StartNew(() => {
-        //    //    return stream.Read(buffer, offset, count);
-        //    //})
-
-        //    if (stream.CanRead)
-        //    {
-        //        DateTime start = DateTime.Now;
-        //        Task<int> readTask = stream.ReadAsync(buffer, offset, count);
-        //        Task delayTask = Task.Delay(timeoutMs);
-        //        Task task = await Task.WhenAny(readTask, delayTask);
-
-        //        if (task == readTask)
-        //        {
-        //            int numBytes = readTask.Result;
-        //            TimeSpan elapsed = DateTime.Now - start;
-        //            CalcSpeed(numBytes, elapsed.TotalMilliseconds, false);
-        //            return numBytes;
-        //        }
-        //    }
-        //    return 0;
-        //}
-
+        /// <summary>
+        /// Blocks reading but will return if the stream is closed
+        /// </summary>
+        /// <param name="stream"></param>
+        /// <param name="buffer"></param>
+        /// <param name="offset"></param>
+        /// <param name="count"></param>
+        /// <returns></returns>
         private int ReadStream(Stream stream, byte[] buffer, int offset, int count)
         {
             DateTime start = DateTime.Now;
@@ -514,8 +500,6 @@ namespace Dicom.Network
                         if (stream.CanRead)
                         {                            
                             count = ReadStream(stream, buffer, 0, 6);
-                            //count = await ReadStreamAsync(stream, buffer, 0, 6, readTimeoutMs).ConfigureAwait(false);
-                            //count = await stream.ReadAsync(buffer, 0, 6).ConfigureAwait(false);
                         }
                         do
                         {
@@ -535,8 +519,6 @@ namespace Dicom.Network
                             if (_readLength > 0)
                             {
                                 count = ReadStream(stream, buffer, 6 - _readLength, _readLength);
-                                //count = await ReadStreamAsync(stream, buffer, 6 - _readLength, _readLength, readTimeoutMs).ConfigureAwait(false);
-                                //count = await stream.ReadAsync(buffer, 6 - _readLength, _readLength).ConfigureAwait(false);
                             }
                         }
                         while (_readLength > 0);
@@ -548,8 +530,6 @@ namespace Dicom.Network
 
                         Array.Resize(ref buffer, length + 6);
                         count = ReadStream(stream, buffer, 6, length);
-                        //count = await ReadStreamAsync(stream, buffer, 6, length, readTimeoutMs).ConfigureAwait(false);
-                        //count = await stream.ReadAsync(buffer, 6, length).ConfigureAwait(false);
 
                         // Read PDU
                         do
@@ -565,7 +545,6 @@ namespace Dicom.Network
                             if (_readLength > 0)
                             {
                                 count = ReadStream(stream, buffer, buffer.Length - _readLength, _readLength);
-                                //count = await stream.ReadAsync(buffer, buffer.Length - _readLength, _readLength).ConfigureAwait(false);
                             }
                         }
                         while (_readLength > 0);
@@ -1078,6 +1057,7 @@ namespace Dicom.Network
             while (true)
             {
                 DicomMessage msg;
+                DicomDataset dataset = null;
                 lock (_lock)
                 {
                     if (_sending)
@@ -1101,7 +1081,7 @@ namespace Dicom.Network
                     _sending = true;
 
                     msg = _msgQueue.Dequeue();
-
+                    dataset = msg.Dataset;
                     if (msg is DicomRequest)
                     {
                         _pending.Add(msg as DicomRequest);
@@ -1109,7 +1089,6 @@ namespace Dicom.Network
                 }
 
                 DoSendMessage(msg);
-
                 lock (_lock) _sending = false;
             }
         }
@@ -1160,7 +1139,6 @@ namespace Dicom.Network
                 {
                     _pending.Remove(msg as DicomRequest);
                 }
-
                 try
                 {
                     msg.UserState = "No PresentationContext";
@@ -1331,7 +1309,7 @@ namespace Dicom.Network
                     logMsg += "DicomSCP";
                 }
                 logMsg += " connection ";
-                if (!String.IsNullOrEmpty(_RemoteHost)) logMsg += " from " + _RemoteHost;
+                if (!String.IsNullOrEmpty(_RemoteHost)) logMsg += "from " + _RemoteHost;
                 logMsg += " ending, Association state: " + AssociationState.ToString();
                 if (exception != null)
                 {
@@ -1354,7 +1332,15 @@ namespace Dicom.Network
                     Logger.Info(logMsg);
                 }
                 lock (_lock) IsConnected = false;
-                (this as IDicomService)?.OnConnectionClosed(exception);
+                try
+                {
+                    (this as IDicomService)?.OnConnectionClosed(exception);
+                }
+                catch (Exception occx)
+                {
+                    Logger.Error("Error during OnConnectionClosed: {@error}", occx.Message);
+                    Logger.Debug("Error during OnConnectionClosed: \n" + occx.Message + "\n" + occx.StackTrace);
+                }
 
                 //throwing here just bubbles out... why do that?
                 //if (exception != null) throw exception;
@@ -1362,7 +1348,8 @@ namespace Dicom.Network
             }
             catch (Exception e)
             {
-                Logger.Error("Error during close attempt: {@error}", e.Message);
+                Logger.Error("Error during close attempt! {@error}", e.Message);
+                Logger.Debug("Error during close attempt: \n" + e.Message + "\n" + e.StackTrace);
                 throw;
             }
         }
@@ -1447,7 +1434,8 @@ namespace Dicom.Network
             Logger.Info("{logId} -> Association release response", LogID);
             AssociationState = DicomAssociationState.Released;
             this.SendPDUAsync(new AReleaseRP()).Wait();
-            System.Threading.Thread.Sleep(500);
+            //this is less than DicomClient DefaultReleaseTimeout
+            Task.Delay(1000).Wait();
             TryCloseConnection(null);
         }
 

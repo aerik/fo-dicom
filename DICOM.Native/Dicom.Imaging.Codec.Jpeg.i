@@ -337,9 +337,9 @@ void JPEGCODEC::Encode(DicomPixelData^ oldPixelData, DicomPixelData^ newPixelDat
         }
 
         IByteBuffer^ buffer;
-        if (MemoryBuffer->Length >= (1 * 1024 * 1024) || oldPixelData->NumberOfFrames > 1)
-            buffer = gcnew TempFileBuffer(MemoryBuffer->ToArray());
-        else
+        //if (MemoryBuffer->Length >= (1 * 1024 * 1024) || oldPixelData->NumberOfFrames > 1)
+        //    buffer = gcnew TempFileBuffer(MemoryBuffer->ToArray());
+        //else
             buffer = gcnew MemoryByteBuffer(MemoryBuffer->ToArray());
         buffer = EvenLengthBuffer::Create(buffer);
         newPixelData->AddFrame(buffer);
@@ -498,9 +498,9 @@ void JPEGCODEC::Decode(DicomPixelData^ oldPixelData, DicomPixelData^ newPixelDat
         jpeg_destroy_decompress(&dinfo);
 
         IByteBuffer^ buffer;
-        if (frameArray->Count >= (2 * 2048 * 2048) || oldPixelData->NumberOfFrames > 1)
-            buffer = gcnew TempFileBuffer(frameArray->Data);
-        else
+        //if (frameArray->Count >= (2 * 2048 * 2048) || oldPixelData->NumberOfFrames > 1)
+        //    buffer = gcnew TempFileBuffer(frameArray->Data);
+        //else
             buffer = gcnew MemoryByteBuffer(frameArray->Data);
         //buffer = EvenLengthBuffer::Create(buffer);
         

@@ -39,7 +39,9 @@ namespace Dicom.Imaging.Codec
             DicomCodecParams parameters = null)
         {
             var transcoder = new DicomTranscoder(dataset.InternalTransferSyntax, syntax, null, parameters);
-            return transcoder.Transcode(dataset);
+            var transcoded = transcoder.Transcode(dataset);
+            //toClone, oldPixelData, and newPixelData should all share buffers, so no need to close any...?
+            return transcoded;
         }
         /// <summary>
         /// Create a copy of the specified DICOM file with requested transfer syntax.

@@ -60,6 +60,7 @@ namespace Dicom.Imaging.Codec
         /// <param name="search">Search pattern for codec assemblies.</param>
         protected override void LoadCodecsImpl(string path, string search)
         {
+            if (Codecs.Count > 0) return;//static constructor is callng this twice >:-(
             if (path == null) path = Path.GetDirectoryName(new Uri(Assembly.GetExecutingAssembly().EscapedCodeBase).LocalPath);
 
             if (search == null) search = "Dicom.Native*.dll";

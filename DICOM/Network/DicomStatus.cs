@@ -98,6 +98,7 @@ namespace Dicom.Network
 
         /// <summary>
         /// Initializes a new instance of the <see cref="DicomStatus"/> class.
+        /// Some statuses can have comments - see https://dicom.nema.org/medical/dicom/current/output/html/part07.html#sect_C.5
         /// </summary>
         /// <param name="status">The status.</param>
         /// <param name="comment">The comment.</param>
