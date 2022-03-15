@@ -55,6 +55,11 @@ namespace Dicom.Imaging
         public string VOILUTFunction { get; private set; }
 
         /// <summary>
+        /// VOI LUT Sequence
+        /// </summary>
+        public DicomSequence VOILUTSequence { get; private set; }
+
+        /// <summary>
         /// Window width
         /// </summary>
         public double WindowWidth { get; set; }
@@ -141,6 +146,15 @@ namespace Dicom.Imaging
             options.VOILUTFunction = dataset.Get<string>(DicomTag.VOILUTFunction, "LINEAR");
             options.ColorMap = GetColorMap(dataset);
 
+            if (dataset.Contains(DicomTag.VOILUTSequence))
+            {
+                try
+                {
+                    options.VOILUTSequence = dataset.Get<DicomSequence>(DicomTag.VOILUTSequence);
+                }
+                catch { } //ignore broken
+            }
+
             return options;
         }
 
@@ -171,6 +185,15 @@ namespace Dicom.Imaging
 
             options.VOILUTFunction = dataset.Get<string>(DicomTag.VOILUTFunction, "LINEAR");
             options.ColorMap = GetColorMap(dataset);
+
+            if (dataset.Contains(DicomTag.VOILUTSequence))
+            {
+                try
+                {
+                    options.VOILUTSequence = dataset.Get<DicomSequence>(DicomTag.VOILUTSequence);
+                }
+                catch { } //ignore broken
+            }
 
             return options;
         }
@@ -209,6 +232,15 @@ namespace Dicom.Imaging
             options.VOILUTFunction = dataset.Get<string>(DicomTag.VOILUTFunction, "LINEAR");
             options.ColorMap = GetColorMap(dataset);
 
+            if (dataset.Contains(DicomTag.VOILUTSequence))
+            {
+                try
+                {
+                    options.VOILUTSequence = dataset.Get<DicomSequence>(DicomTag.VOILUTSequence);
+                }
+                catch { } //ignore broken
+            }
+
             return options;
         }
 
@@ -233,6 +265,15 @@ namespace Dicom.Imaging
 
             options.VOILUTFunction = dataset.Get<string>(DicomTag.VOILUTFunction, "LINEAR");
             options.ColorMap = GetColorMap(dataset);
+
+            if (dataset.Contains(DicomTag.VOILUTSequence))
+            {
+                try
+                {
+                    options.VOILUTSequence = dataset.Get<DicomSequence>(DicomTag.VOILUTSequence);
+                }
+                catch { } //ignore broken
+            }
 
             return options;
         }
@@ -272,6 +313,15 @@ namespace Dicom.Imaging
             options.VOILUTFunction = dataset.Get<string>(DicomTag.VOILUTFunction, "LINEAR");
             options.ColorMap = GetColorMap(dataset);
 
+            if (dataset.Contains(DicomTag.VOILUTSequence))
+            {
+                try
+                {
+                    options.VOILUTSequence = dataset.Get<DicomSequence>(DicomTag.VOILUTSequence);
+                }
+                catch { } //ignore broken
+            }
+
             return options;
         }
 
@@ -288,6 +338,14 @@ namespace Dicom.Imaging
                        : ColorTable.Monochrome2;
         }
 
+        public static GrayscaleRenderOptions CreateLinearOption(BitDepth bits, int minValue, int maxValue)
+        {
+            return new GrayscaleRenderOptions(bits)
+            {
+                WindowWidth = maxValue - minValue,
+                WindowCenter = (maxValue + minValue) / 2
+            };
+        }
         #endregion
     }
 }

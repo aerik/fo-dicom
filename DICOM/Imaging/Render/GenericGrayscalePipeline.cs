@@ -16,6 +16,8 @@ namespace Dicom.Imaging.Render
 
         private readonly ModalityLUT _rescaleLut;
 
+        private readonly VOISequenceLUT _voiSequenceLut;
+
         private readonly VOILUT _voiLut;
 
         private readonly OutputLUT _outputLut;
@@ -37,7 +39,15 @@ namespace Dicom.Imaging.Render
         {
             _options = options;
             if (_options.RescaleSlope != 1.0 || _options.RescaleIntercept != 0.0) _rescaleLut = new ModalityLUT(_options);
-            _voiLut = VOILUT.Create(_options);
+            if (options.VOILUTSequence != null)
+            {
+                _voiSequenceLut = new VOISequenceLUT(_options);
+                _voiLut = new VOILinearLUT(GrayscaleRenderOptions.CreateLinearOption(_options.BitDepth, _voiSequenceLut.MinimumOutputValue, _voiSequenceLut.MaximumOutputValue));
+            }
+            else
+            {
+                _voiLut = VOILUT.Create(_options);
+            }
             _outputLut = new OutputLUT(_options);
             if (_options.Invert) _invertLut = new InvertLUT(_outputLut.MinimumOutputValue, _outputLut.MaximumOutputValue);
         }
@@ -57,6 +67,7 @@ namespace Dicom.Imaging.Render
                 {
                     CompositeLUT composite = new CompositeLUT();
                     if (_rescaleLut != null) composite.Add(_rescaleLut);
+                    if (_voiSequenceLut != null) composite.Add(_voiSequenceLut);
                     composite.Add(_voiLut);
                     composite.Add(_outputLut);
                     if (_invertLut != null) composite.Add(_invertLut);
