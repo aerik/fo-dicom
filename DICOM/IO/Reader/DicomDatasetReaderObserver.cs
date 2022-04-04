@@ -158,6 +158,7 @@ namespace Dicom.IO.Reader
         public void OnBeginSequence(IByteSource source, DicomTag tag, uint length)
         {
             DicomSequence sq = new DicomSequence(tag);
+            sq.StreamPosition = source.Position;
             _sequences.Push(sq);
 
             DicomDataset ds = _datasets.Peek();

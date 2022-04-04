@@ -41,8 +41,16 @@ namespace Dicom.Imaging.Render
             if (_options.RescaleSlope != 1.0 || _options.RescaleIntercept != 0.0) _rescaleLut = new ModalityLUT(_options);
             if (options.VOILUTSequence != null)
             {
-                _voiSequenceLut = new VOISequenceLUT(_options);
-                _voiLut = new VOILinearLUT(GrayscaleRenderOptions.CreateLinearOption(_options.BitDepth, _voiSequenceLut.MinimumOutputValue, _voiSequenceLut.MaximumOutputValue));
+                try
+                {
+                    _voiSequenceLut = new VOISequenceLUT(_options);
+                    _voiLut = new VOILinearLUT(GrayscaleRenderOptions.CreateLinearOption(_options.BitDepth, _voiSequenceLut.MinimumOutputValue, _voiSequenceLut.MaximumOutputValue));
+                }
+                catch
+                {
+                    //ignore errors, ignore sequence lut if broken
+                    _voiLut = VOILUT.Create(_options);
+                }
             }
             else
             {

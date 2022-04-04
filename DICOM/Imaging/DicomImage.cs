@@ -232,8 +232,10 @@ namespace Dicom.Imaging
         /// </summary>
         /// <param name="dataset">dataset to load pixeldata from</param>
         /// <param name="frame">The frame number to create pixeldata for</param>
-        private void Load(DicomDataset dataset, int frame)
+        private void Load(DicomDataset srcDataset, int frame)
         {
+            DicomDataset dataset = srcDataset.Clone();
+            DicomPixelData.FixBrokenCompression(dataset);
             Dataset = DicomTranscoder.ExtractOverlays(dataset);
 
             if (PixelData == null)

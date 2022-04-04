@@ -7,6 +7,7 @@ using System.Threading;
 using System.Windows.Forms;
 
 using Dicom.Imaging;
+using Dicom.IO.Buffer;
 
 namespace Dicom.Dump
 {
@@ -45,6 +46,8 @@ namespace Dicom.Dump
                     {
                         try
                         {
+                            DicomDataset dataset = _file.Dataset;
+                            //DicomPixelData.FixBrokenCompression(dataset);
                             _image = new DicomImage(_file.Dataset);
                             _grayscale = !_image.PhotometricInterpretation.IsColor;
                             if (_grayscale)

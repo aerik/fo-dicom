@@ -370,12 +370,48 @@ namespace Dicom.Imaging
                 var item = dataset.Get<DicomItem>(DicomTag.PixelData);
                 if (item == null) throw new DicomImagingException("DICOM dataset is missing pixel data element.");
 
-                if (item is DicomOtherByte) return new OtherBytePixelData(dataset, false);
-                if (item is DicomOtherWord) return new OtherWordPixelData(dataset, false);
-                if (item is DicomOtherByteFragment || item is DicomOtherWordFragment) return new EncapsulatedPixelData(dataset, false);
+                if (!syntax.IsEncapsulated)
+                {
+                    if (item is DicomOtherByte) return new OtherBytePixelData(dataset, false);
+                    if (item is DicomOtherWord) return new OtherWordPixelData(dataset, false);
+                }
+                else
+                {
+                    if (item is DicomOtherByteFragment || item is DicomOtherWordFragment) return new EncapsulatedPixelData(dataset, false);
+                }
 
-                throw new DicomImagingException("Unexpected or unhandled pixel data element type: {0}", item.GetType());
+                throw new DicomImagingException("Unexpected or unhandled pixel data element type for syntax {0}: {1}", syntax.UID.Name, item.GetType());
             }
+        }
+
+        public static bool FixBrokenCompression(DicomDataset dataset)
+        {
+            if (dataset.InternalTransferSyntax.IsEncapsulated && dataset.Contains(DicomTag.PixelData))
+            {
+                uint numFrames = dataset.Get<uint>(DicomTag.NumberOfFrames, 0, 1);
+                var item = dataset.Get<DicomItem>(DicomTag.PixelData);
+                IByteBuffer buf = null;
+                if (item is DicomOtherByte)
+                {
+                    buf = ((DicomOtherByte)item).Buffer;
+                }
+                if (item is DicomOtherWord)
+                {
+                    buf = ((DicomOtherWord)item).Buffer;
+                }
+                if (buf != null && buf.Size > 0)
+                {
+                    if (numFrames > 1)
+                    {
+                        string sop = dataset.Get<string>(DicomTag.SOPInstanceUID,0,"unknown");
+                        Log.LogManager.GetLogger("DicomPixelData").Error("Broken pixel data compression detected in " + sop);
+                        return false; //can't fix
+                    }
+                    DicomPixelData dpd = DicomPixelData.Create(dataset, true);
+                    dpd.AddFrame(buf);
+                }
+            }
+            return true;
         }
 
         /// <summary>
