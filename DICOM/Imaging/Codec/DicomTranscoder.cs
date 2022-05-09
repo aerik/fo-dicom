@@ -279,7 +279,7 @@ namespace Dicom.Imaging.Codec
                 buffer = new EmptyBuffer();
             }
             var newDataset = oldDataset.Clone();
-            newDataset.InternalTransferSyntax = OutputSyntax;
+            newDataset.InternalTransferSyntax = DicomTransferSyntax.ExplicitVRLittleEndian;
             pixelData = DicomPixelData.Create(newDataset, true);
             if (buffer.Size > 0) //don't try to decode empty buffer
             {
@@ -325,7 +325,6 @@ namespace Dicom.Imaging.Codec
                 pixelData.PhotometricInterpretation = PhotometricInterpretation.YbrFull;
                 pixelData.PlanarConfiguration = PlanarConfiguration.Planar;
             }
-            pixelData.Dataset.InternalTransferSyntax = DicomTransferSyntax.ExplicitVRLittleEndian;
             return pixelData;
         }
 
@@ -388,7 +387,7 @@ namespace Dicom.Imaging.Codec
             var oldDataset = dataset.Clone();
             DicomPixelData.FixBrokenCompression(oldDataset);
             var oldPixelData = DicomPixelData.Create(oldDataset, false);
-            var newPixelData = DecodePixels(oldDataset, 0);
+            var newPixelData = DecodePixels(oldDataset, 0);//incorrectly returns encapsulated pixel data
             if (newPixelData != null)
             {
                 uint numberOfFrames = oldPixelData.NumberOfFrames;
