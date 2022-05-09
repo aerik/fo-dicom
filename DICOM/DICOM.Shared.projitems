@@ -88,6 +88,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)Imaging\LUT\PaletteColorLUT.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Imaging\LUT\PrecalculatedLUT.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Imaging\LUT\VOILUT.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Imaging\LUT\VOISequenceLUT.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Imaging\Mathematics\BitList.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Imaging\Mathematics\Extensions.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Imaging\Mathematics\Geometry3D.cs" />
