@@ -59,7 +59,7 @@ namespace Dicom.Network
             this.cancellationSource = new CancellationTokenSource();
             this.clients = new List<T>();
 
-            this.Options = options;
+            this.Options = options ?? DicomServiceOptions.Default;
             this.Logger = logger ?? LogManager.GetLogger("Dicom.Network");
             this.IsListening = false;
             this.Exception = null;

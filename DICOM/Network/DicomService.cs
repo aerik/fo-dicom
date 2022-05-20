@@ -69,6 +69,10 @@ namespace Dicom.Network
         private double _NetworkSentMs = 0;
         private long _BytesReceivedCounter = 0;
         private double _NetworkReceivedMs = 0;
+        private long _TotalBytesSent = 0;
+        private long _TotalBytesReceived = 0;
+
+        private readonly DateTime _ConnectTime;
 
         private readonly string _RemoteHost;
 
@@ -84,6 +88,7 @@ namespace Dicom.Network
         /// <param name="log">Logger</param>
         protected DicomService(INetworkStream stream, Encoding fallbackEncoding, Logger log)
         {
+            _ConnectTime = DateTime.Now;
             AssociationState = DicomAssociationState.None;
             _network = stream;
             _RemoteHost = _network.RemoteHost;
@@ -96,7 +101,7 @@ namespace Dicom.Network
             IsConnected = true;
             _fallbackEncoding = fallbackEncoding ?? DicomEncoding.Default;
             Logger = log ?? LogManager.GetLogger("Dicom.Network");
-            Options = new DicomServiceOptions();
+            Options = DicomServiceOptions.Default;
 
             _pduListener = ListenAndProcessPDUAsync();
         }
@@ -227,7 +232,13 @@ namespace Dicom.Network
                     logMsg += "DicomSCP";
                 }
                 logMsg += " connection disposed, Association state: " + AssociationState.ToString();
-                logMsg += " n=" + nCount;
+                logMsg += " n=" + nCount + "\n";
+                lock (_SpeedLocker)
+                {
+                    TimeSpan connectedTime = DateTime.Now - _ConnectTime;
+                    logMsg += "Total bytes sent: " + _TotalBytesSent + ", Total bytes received: " + _TotalBytesReceived;
+                    logMsg += " Total connection time: " + connectedTime.TotalSeconds + " seconds";
+                }
                 if(AssociationState == DicomAssociationState.Released || AssociationState == DicomAssociationState.None)
                 {
                     Logger.Info(logMsg);
@@ -241,27 +252,6 @@ namespace Dicom.Network
             _disposed = true;
         }
 
-        //private bool DisconnectIfStale()
-        //{
-        //    bool staleConnection = false;
-        //    DateTime minNetworkTime = DateTime.Now.AddMinutes(-5);
-        //    if (IsConnected)
-        //    {
-        //        lock (_SpeedLocker)
-        //        {
-        //            if (_LastNetworkReceive < minNetworkTime && _LastNetworkSend < minNetworkTime)
-        //            {
-        //                staleConnection = true;
-        //            }
-        //        }
-        //        if (staleConnection)
-        //        {
-        //            Logger.Warn("No network activity in 5 minutes, aborting");
-        //            TryCloseConnection(null, true);
-        //        }
-        //    }
-        //    return staleConnection;
-        //}
 
         private void CalcSpeed(long byteCount, double networkMs, bool dirIsUp, bool force = false)
         {
@@ -271,12 +261,14 @@ namespace Dicom.Network
                 if (dirIsUp)
                 {
                     _BytesSentCounter += byteCount;
+                    _TotalBytesSent += byteCount;
                     _NetworkSentMs += networkMs;
                     if (byteCount > 0) _LastNetworkSend = DateTime.Now;
                 }
                 else
                 {
                     _BytesReceivedCounter += byteCount;
+                    _TotalBytesReceived += byteCount;
                     _NetworkReceivedMs += networkMs;
                     if (byteCount > 0) _LastNetworkReceive = DateTime.Now;
                 }
@@ -376,7 +368,13 @@ namespace Dicom.Network
         /// <returns>Awaitable task.</returns>
         protected async Task SendPDUAsync(PDU pdu)
         {
-            if (!IsConnected) return;
+            if (!IsConnected)
+            {
+                string logMsg = "PDU cannot be queued due to no connection: " + (pdu.GetType()).Name;
+                if (LogID != null) logMsg = LogID + " " + logMsg;
+                Logger.Warn(logMsg);
+                return;
+            }
             //if (_disposed) return;
             _pduQueueWatcher.Wait();
 
@@ -393,8 +391,6 @@ namespace Dicom.Network
         {
             while (true)
             {
-                if (!IsConnected) return;
-
                 PDU pdu;
 
                 lock (_lock)
@@ -409,32 +405,54 @@ namespace Dicom.Network
                     if (_pduQueue.Count < MaximumPDUsInQueue) _pduQueueWatcher.Set();
                 }
 
-                if (Options.LogDataPDUs && pdu is PDataTF) Logger.Info("{logId} -> {pdu}", LogID, pdu);
+                if (!IsConnected)
+                {
+                    string notConnected = "PDU cannot be sent due to no connection: " + (pdu.GetType()).Name;
+                    if (LogID != null) notConnected = LogID + " " + notConnected;
+                    Logger.Warn(notConnected);
+                    return;
+                }
+                // if (Options.LogDataPDUs && pdu is PDataTF) Logger.Info("{logId} -> Ready to send {pdu}", LogID, pdu);
+                if (Options.LogDataPDUs) Logger.Debug("{logId} -> Ready to send PDU {pdu}", LogID, pdu);
 
                 MemoryStream ms = new MemoryStream();
+
+                string pduName = "unknown";
+                if (pdu != null) pduName = pdu.GetType().Name;                
                 pdu.Write().WritePDU(ms);
-
                 byte[] buffer = ms.ToArray();
-
+                string logMsg = "";
+                if (LogID != null) logMsg = LogID + " ";
+                int bytesToWrite = buffer.Length;
+                DateTime start = DateTime.Now;
+                bool forceCalcSpeed = true;
                 try
                 {
-                    DateTime start = DateTime.Now;
-                    lock (_networkCounterLock) _networkCounter++;
-                    await _network.AsStream().WriteAsync(buffer, 0, (int)ms.Length).ConfigureAwait(false);
-                    lock (_networkCounterLock) _networkCounter--;
-                    TimeSpan elapsed = DateTime.Now - start;
-                    CalcSpeed(ms.Length,elapsed.TotalMilliseconds,true);
+                    if (bytesToWrite > 0)
+                    {
+                        lock (_networkCounterLock) _networkCounter++;
+                        var nStream = _network.AsStream();
+                        if (nStream.CanWrite) {
+                            await nStream.WriteAsync(buffer, 0, buffer.Length).ConfigureAwait(false);
+                            forceCalcSpeed = false;
+                            if (Options.LogDataPDUs) Logger.Debug("{logId} -> Sent PDU {pdu}", LogID, pdu);
+                        }
+                        else
+                        {
+                            Logger.Warn(logMsg + "Could not write " + bytesToWrite + " bytes for " + pduName + " to stream");
+                        }
+                        lock (_networkCounterLock) _networkCounter--;     
+                    }
                 }
                 catch (ObjectDisposedException)
                 {
-                    // silently ignore
-                    Logger.Warn("Object disposed while writing");
+                    Logger.Warn(logMsg + "Object disposed while writing " + bytesToWrite + " bytes for " + pduName);
                     TryCloseConnection(force: true);
                 }
                 catch (NullReferenceException)
                 {
                     // connection already closed; silently ignore
-                    Logger.Warn("Null reference while writing");
+                    Logger.Warn(logMsg + "Null reference while writing");
                     TryCloseConnection(force: true);
                 }
                 catch (IOException e)
@@ -451,14 +469,19 @@ namespace Dicom.Network
                     }
                     else
                     {
-                        Logger.Error("AggregateException sending PDU: " + agx.ToString());
+                        Logger.Error(logMsg + "AggregateException sending PDU: " + agx.ToString());
                         TryCloseConnection(agx);
                     }
                 }
                 catch (Exception e)
                 {
-                    Logger.Error("Exception sending PDU: {@error}", e);
+                    Logger.Error(logMsg + "Exception sending PDU: {@error}", e);
                     TryCloseConnection(e);
+                }
+                finally
+                {
+                    TimeSpan elapsed = DateTime.Now - start;
+                    CalcSpeed(bytesToWrite, elapsed.TotalMilliseconds, true, forceCalcSpeed);
                 }
 
                 lock (_lock) _writing = false;
@@ -616,7 +639,7 @@ namespace Dicom.Network
                                 {
                                     var pdu = new PDataTF();
                                     pdu.Read(raw);
-                                    if (Options.LogDataPDUs) Logger.Info("{logId} <- {@pdu}", LogID, pdu);
+                                    if (Options.LogDataPDUs) Logger.Debug("{logId} <- {@pdu}", LogID, pdu);
                                     //await this.ProcessPDataTFAsync(pdu).ConfigureAwait(false);
                                     this.ProcessPDataTFAsync(pdu).Wait();
                                     break;
@@ -1298,7 +1321,7 @@ namespace Dicom.Network
                     {
                         logMsg += " -> ";
                     }
-                    logMsg += "DicomSCU";
+                    logMsg += "DicomSCU connection to";
                 }
                 else
                 {
@@ -1306,10 +1329,9 @@ namespace Dicom.Network
                     {
                         logMsg += " -> ";
                     }
-                    logMsg += "DicomSCP";
+                    logMsg += "DicomSCP connection from";
                 }
-                logMsg += " connection ";
-                if (!String.IsNullOrEmpty(_RemoteHost)) logMsg += "from " + _RemoteHost;
+                if (!String.IsNullOrEmpty(_RemoteHost)) logMsg += " " + _RemoteHost;
                 logMsg += " ending, Association state: " + AssociationState.ToString();
                 if (exception != null)
                 {
@@ -1472,21 +1494,21 @@ namespace Dicom.Network
         {
             int errorCode;
             string errorDescriptor;
+            string logMsg = "";
+            if (LogID != null) logMsg = LogID + " ";
             if (NetworkManager.IsSocketException(e.InnerException, out errorCode, out errorDescriptor))
             {
-                string logMsg = "";
-                if (LogID != null) logMsg = LogID;
                 string state = AssociationState.ToString();
                 if (this.AssociationState != DicomAssociationState.Released || errorCode != 10054)
                 {
                     logger.Warn(logMsg +
-                        $" Socket error while {(reading ? "reading" : "writing")} PDU: {{socketError}} [{{errorCode}}], Association state: {{state}}",
+                        $"Socket error while {(reading ? "reading" : "writing")} PDU: {{socketError}} [{{errorCode}}], Association state: {{state}}",
                         errorDescriptor, errorCode, state);
                 }
                 else
                 {
                     logger.Info(logMsg +
-                        $" Socket exception while {(reading ? "reading" : "writing")} PDU: {{socketError}} [{{errorCode}}], Association state: {{state}}",
+                        $"Socket exception while {(reading ? "reading" : "writing")} PDU: {{socketError}} [{{errorCode}}], Association state: {{state}}",
                         errorDescriptor, errorCode, state);
                 }
                 return true;
@@ -1494,11 +1516,11 @@ namespace Dicom.Network
 
             if (e.InnerException is ObjectDisposedException)
             {
-                logger.Warn($"Object disposed while {(reading ? "reading" : "writing")} PDU: {{@error}}", e);
+                logger.Warn(logMsg + $"Object disposed while {(reading ? "reading" : "writing")} PDU: {{@error}}", e);
             }
             else
             {
-                logger.Error($"I/O exception while {(reading ? "reading" : "writing")} PDU: {{@error}}", e);
+                logger.Error(logMsg + $"I/O exception while {(reading ? "reading" : "writing")} PDU: {{@error}}", e);
             }
 
             return false;

@@ -10,8 +10,36 @@ namespace Dicom.Network
     {
         #region INNER TYPES
 
+        private static readonly object _locker = new object();
+
+        private static DicomServiceOptions _Instance = new DicomServiceOptions();
+
+        public static DicomServiceOptions Default
+        {
+            get
+            {
+                lock (_locker)
+                {
+                    //copy to prevent multi-thread access to member fields
+                    return new DicomServiceOptions(_Instance);
+                }
+            }
+        }
+
+        public static void SetDefault(DicomServiceOptions newOpts)
+        {
+            if (newOpts != null)
+            {
+                lock (_locker)
+                {
+                    _Instance = new DicomServiceOptions(newOpts);
+                }
+            }
+        }
+        
+
         /// <summary>Default options for use with the <see cref="DicomService"/> base class.</summary>
-        public static class Default
+        private static class DefaultValues
         {
             public static readonly bool LogDataPDUs = false;
 
@@ -35,15 +63,25 @@ namespace Dicom.Network
         /// <summary>Constructor</summary>
         public DicomServiceOptions()
         {
-            LogDataPDUs = Default.LogDataPDUs;
-            LogDimseDatasets = Default.LogDimseDatasets;
-            UseRemoteAEForLogName = Default.UseRemoteAEForLogName;
-            MaxCommandBuffer = Default.MaxCommandBuffer;
-            MaxDataBuffer = Default.MaxDataBuffer;
-            IgnoreSslPolicyErrors = Default.IgnoreSslPolicyErrors;
-            TcpNoDelay = Default.TcpNoDelay;
+            LogDataPDUs = DefaultValues.LogDataPDUs;
+            LogDimseDatasets = DefaultValues.LogDimseDatasets;
+            UseRemoteAEForLogName = DefaultValues.UseRemoteAEForLogName;
+            MaxCommandBuffer = DefaultValues.MaxCommandBuffer;
+            MaxDataBuffer = DefaultValues.MaxDataBuffer;
+            IgnoreSslPolicyErrors = DefaultValues.IgnoreSslPolicyErrors;
+            TcpNoDelay = DefaultValues.TcpNoDelay;
         }
 
+        public DicomServiceOptions(DicomServiceOptions src)
+        {
+            LogDataPDUs = src.LogDataPDUs;
+            LogDimseDatasets = src.LogDimseDatasets;
+            UseRemoteAEForLogName = src.UseRemoteAEForLogName;
+            MaxCommandBuffer = src.MaxCommandBuffer;
+            MaxDataBuffer = src.MaxDataBuffer;
+            IgnoreSslPolicyErrors = src.IgnoreSslPolicyErrors;
+            TcpNoDelay = src.TcpNoDelay;
+        }
         #endregion
 
         #region PROPERTIES

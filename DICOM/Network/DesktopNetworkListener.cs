@@ -3,6 +3,7 @@
 
 namespace Dicom.Network
 {
+    using System;
     using System.Net;
     using System.Net.Sockets;
     using System.Security.Cryptography.X509Certificates;
@@ -94,7 +95,7 @@ namespace Dicom.Network
 
                 return null;
             }
-            catch
+            catch(Exception x)
             {
                 return null;
             }

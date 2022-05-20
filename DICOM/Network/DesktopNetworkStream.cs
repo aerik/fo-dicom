@@ -55,14 +55,21 @@ namespace Dicom.Network
                     stream,
                     false,
                     (sender, certificate, chain, errors) => errors == SslPolicyErrors.None || ignoreSslPolicyErrors);
+                ssl.ReadTimeout = 5000;
+                ssl.WriteTimeout = 5000;
+
 #if NETSTANDARD
                 ssl.AuthenticateAsClientAsync(host).Wait();
 #else
-                ssl.AuthenticateAsClient(host);
+                ssl.AuthenticateAsClient(host, null, SslProtocols.Tls11 | SslProtocols.Tls12, false);
 #endif
                 stream = ssl;
+                stream.ReadTimeout = -1;
+                stream.WriteTimeout = -1;
             }
-
+            //possibly reset
+            stream.ReadTimeout = -1;
+            stream.WriteTimeout = -1;
             this.LocalHost = ((IPEndPoint)tcpClient.Client.LocalEndPoint).Address.ToString();
             this.LocalPort = ((IPEndPoint)tcpClient.Client.LocalEndPoint).Port;
 
@@ -85,20 +92,38 @@ namespace Dicom.Network
             this.RemotePort = ((IPEndPoint)tcpClient.Client.RemoteEndPoint).Port;
 
             Stream stream = tcpClient.GetStream();
-
             if (certificate != null)
             {
-                var ssl = new SslStream(stream, false);
+                var ssl = new SslStream(stream, false,null,null,EncryptionPolicy.RequireEncryption);
+                ssl.ReadTimeout = 5000;
+                ssl.WriteTimeout = 5000;
 #if NETSTANDARD
                 ssl.AuthenticateAsServerAsync(certificate, false, SslProtocols.Tls, false).Wait();
 #else
-                ssl.AuthenticateAsServer(certificate, false, SslProtocols.Tls, false);
+                //this seems to need specific permissions to the certificate, otherwise can get "The credentials supplied to the package were not recognized"
+                ssl.AuthenticateAsServer(certificate, false, SslProtocols.Tls11 | SslProtocols.Tls12, false);
 #endif
                 stream = ssl;
+                stream.ReadTimeout = -1;
+                stream.WriteTimeout = -1;
             }
 
             this.networkStream = stream;
         }
+
+        //static bool VerifyClientCertificate(object sender, X509Certificate certificate, X509Chain chain, SslPolicyErrors sslPolicyErrors)
+        //{
+        //    try
+        //    {
+
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        Console.WriteLine(ex);
+        //    }
+
+        //    return false;
+        //}
 
         /// <summary>
         /// Destructor.
@@ -135,6 +160,22 @@ namespace Dicom.Network
         #endregion
 
         #region METHODS
+
+        public Socket GetSocket()
+        {
+            if(this.tcpClient != null)
+            {
+                return this.tcpClient.Client;
+            }
+            return null;
+        }
+
+        public bool IsConnected()
+        {
+            Socket sock = GetSocket();
+            if (sock != null) return sock.Connected;
+            return false;
+        }
 
         /// <summary>
         /// Get corresponding <see cref="Stream"/> object.

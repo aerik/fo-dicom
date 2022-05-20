@@ -34,6 +34,7 @@ namespace Dicom.Network
         private int asyncPerformed;
 
         private INetworkStream networkStream;
+        private bool ownsNetworkStream = false;
 
         private bool aborted;
 
@@ -268,6 +269,7 @@ namespace Dicom.Network
             var ignoreSslPolicyErrors = Options?.IgnoreSslPolicyErrors
                                         ?? DicomServiceOptions.Default.IgnoreSslPolicyErrors;
             this.networkStream = NetworkManager.CreateNetworkStream(host, port, useTls, noDelay, ignoreSslPolicyErrors);
+            this.ownsNetworkStream = true;
             return this.networkStream;
         }
 
@@ -431,7 +433,17 @@ namespace Dicom.Network
 
                     service = new DicomServiceUser(this, stream, association, Options, FallbackEncoding, Logger);
                 }
-
+                if (!service.IsConnected)
+                {
+                    string logMsg = "Aborting due to no connection";
+                    if (service.LogID != null) logMsg = service.LogID + " " + logMsg;
+                    if (stream != null && !String.IsNullOrEmpty(stream.RemoteHost))
+                    {
+                        logMsg += " to " + stream.RemoteHost + ":" + stream.RemotePort;
+                    }
+                    Logger.Warn(logMsg);
+                    Abort();
+                }
                 var associated = await associateNotifier.Task.ConfigureAwait(false);
 
                 bool send;
@@ -795,16 +807,26 @@ namespace Dicom.Network
 
             private void SetComplete(Exception ex = null)
             {
-                if (this.client.completeNotifier != null)
+                try
                 {
-                    if (ex == null)
+                    if (this.client != null)
                     {
-                        this.client.completeNotifier.TrySetResult(true);
+                        if (this.client.completeNotifier != null)
+                        {
+                            if (ex == null)
+                            {
+                                this.client.completeNotifier.TrySetResult(true);
+                            }
+                            else
+                            {
+                                this.client.completeNotifier.TrySetException(ex);
+                            }
+                        }
                     }
-                    else
-                    {
-                        this.client.completeNotifier.TrySetException(ex);
-                    }
+                }
+                catch (Exception x)
+                {
+                    Logger.Warn("SetComplete failed: " + x.Message);
                 }
             }
 
