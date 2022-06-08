@@ -261,9 +261,15 @@ namespace Dicom.Imaging.Codec
                 return PixelDataFactory.Create(DicomPixelData.Create(dataset), frame);
             }
             DicomPixelData newPixelData = DecodePixels(dataset, frame);
-            return PixelDataFactory.Create(newPixelData,frame);
+            return PixelDataFactory.Create(newPixelData,0);//zero because there is only one frame
         }
 
+        /// <summary>
+        /// Returns a DicomPixelData with a single uncompressed frame
+        /// </summary>
+        /// <param name="dataset"></param>
+        /// <param name="frame"></param>
+        /// <returns></returns>
         private DicomPixelData DecodePixels(DicomDataset dataset, int frame)
         {
             DicomDataset oldDataset = dataset.Clone();
@@ -338,7 +344,19 @@ namespace Dicom.Imaging.Codec
             IByteBuffer buffer = null;
             try
             {
-                buffer = pixelData.GetFrame(frame);
+                if(pixelData.BitsAllocated == 1)
+                {
+                    var pixels = PixelDataFactory.Create(pixelData, frame);
+                    if(pixels is GrayscalePixelDataU8) //should always be
+                    {
+                        var gr8 = (GrayscalePixelDataU8)pixels;
+                        buffer = new MemoryByteBuffer(gr8.Data);
+                    }
+                }
+                else
+                {
+                    buffer = pixelData.GetFrame(frame);
+                }
             }
             catch (IndexOutOfRangeException iorx)
             {
@@ -352,6 +370,24 @@ namespace Dicom.Imaging.Codec
                 // clone dataset to prevent changes to source
                 var cloneDataset = dataset.Clone();
                 var oldPixelData = DicomPixelData.Create(cloneDataset, true);
+                if(oldPixelData.BitsAllocated == 1)
+                {
+                    oldPixelData.BitsAllocated = 8;
+                    oldPixelData.BitsStored = 8;
+                    oldPixelData.HighBit = 7;
+                    newPixelData.BitsAllocated = 8;
+                    newPixelData.BitsStored = 8;
+                    newPixelData.HighBit = 7;
+                    double oldWidth = newDataset.Get<double>(DicomTag.WindowWidth, 0, 0.0);
+                    if(oldWidth == 0.0)
+                    {
+                        newDataset.AddOrUpdate(DicomTag.WindowWidth, (decimal)2);
+                    }
+                    if (!newDataset.Contains(DicomTag.WindowCenter))
+                    {
+                        newDataset.AddOrUpdate(DicomTag.WindowCenter, (decimal)1);
+                    }
+                }
                 oldPixelData.AddFrame(buffer);
                 OutputCodec.Encode(oldPixelData, newPixelData, OutputCodecParams);
                 if (OutputSyntax.IsLossy && newPixelData.NumberOfFrames > 0)
@@ -387,7 +423,7 @@ namespace Dicom.Imaging.Codec
             var oldDataset = dataset.Clone();
             DicomPixelData.FixBrokenCompression(oldDataset);
             var oldPixelData = DicomPixelData.Create(oldDataset, false);
-            var newPixelData = DecodePixels(oldDataset, 0);//incorrectly returns encapsulated pixel data
+            var newPixelData = DecodePixels(oldDataset, 0);
             if (newPixelData != null)
             {
                 uint numberOfFrames = oldPixelData.NumberOfFrames;
