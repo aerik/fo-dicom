@@ -502,6 +502,7 @@ namespace Dicom.Network
             int numBytes = stream.Read(buffer, offset, count);
             lock (_networkCounterLock) _networkCounter--;
             TimeSpan elapsed = DateTime.Now - start;
+            Logger.Debug("Read " + numBytes + " bytes after " + elapsed.TotalMilliseconds);
             CalcSpeed(numBytes, elapsed.TotalMilliseconds, false);
             return numBytes;
         }
@@ -533,7 +534,7 @@ namespace Dicom.Network
                                     string logMsg = "";
                                     if (LogID != null) logMsg = LogID;
                                     Logger.Info(logMsg + " No Bytes read - disconnecting");
-                                    TryCloseConnection();
+                                    TryCloseConnection(null,true);
                                 }
                                 return;
                             }
@@ -560,7 +561,7 @@ namespace Dicom.Network
                             if (count == 0)
                             {
                                 // disconnected
-                                TryCloseConnection();
+                                TryCloseConnection(null, true);
                                 return;
                             }
 
@@ -1296,21 +1297,24 @@ namespace Dicom.Network
 
                 lock (_lock)
                 {
-                    if (force)
-                    {
-                        _pduQueue.Clear();
-                        _msgQueue.Clear();
-                        _pending.Clear();
-                        _pduQueueWatcher.Set();
-                    }
-                    else if (_pduQueue.Count > 0 || _msgQueue.Count > 0 || _pending.Count > 0)
+                    if (_pduQueue.Count > 0 || _msgQueue.Count > 0 || _pending.Count > 0)
                     {
                         Logger.Warn(
                             "Queue(s) not empty, PDUs: {pduCount}, messages: {msgCount}, pending requests: {pendingCount}",
                             _pduQueue.Count,
                             _msgQueue.Count,
                             _pending.Count);
-                        return false;
+                        if (force)
+                        {
+                            _pduQueue.Clear();
+                            _msgQueue.Clear();
+                            _pending.Clear();
+                            _pduQueueWatcher.Set();
+                        }
+                        else
+                        {
+                            return false;
+                        }
                     }
                 }
                 string logMsg = "";
