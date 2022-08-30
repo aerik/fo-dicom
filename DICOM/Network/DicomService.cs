@@ -1310,6 +1310,8 @@ namespace Dicom.Network
                             _msgQueue.Clear();
                             _pending.Clear();
                             _pduQueueWatcher.Set();
+                            //create an exception if one does not exist
+                            if (exception == null) exception = new DicomNetworkException("Connection closed with items in queue");
                         }
                         else
                         {

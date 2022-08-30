@@ -151,6 +151,14 @@ namespace Dicom
                 if (String.IsNullOrEmpty(StringValue)) _values = new string[0];
                 else _values = StringValue.Split('\\');
                 _count = _values.Length;
+                //trim spaces from UIDS with bad padding
+                if(this.ValueRepresentation == DicomVR.UI)
+                {
+                    for(int i=0; i<_values.Length; i++)
+                    {
+                        if (_values[i] != null) _values[i] = _values[i].Trim();
+                    }
+                }
             }
 
             if (typeof(T) == typeof(string) || typeof(T) == typeof(object))
@@ -1691,7 +1699,7 @@ namespace Dicom
         #region Public Constructors
 
         public DicomUniqueIdentifier(DicomTag tag, params string[] values)
-            : base(tag, values)
+            : base(tag, values.Select(val => val == null ? val : val.Trim() ).ToArray())
         {
         }
 
