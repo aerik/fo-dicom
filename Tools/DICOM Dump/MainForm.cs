@@ -245,7 +245,7 @@ namespace Dicom.Dump
                 return true;
             }
 
-            public bool OnEndSequence()
+            public bool OnEndSequence() 
             {
                 Level--;
                 return true;

@@ -213,6 +213,27 @@ namespace Dicom.Dump
                 return;
             }
 
+            if (e.KeyCode == Keys.S)
+            {
+                var sfd = new SaveFileDialog();
+                sfd.Filter = "PNG image |*.png";
+                if(sfd.ShowDialog() == DialogResult.OK)
+                {
+                    string fileName = sfd.FileName;
+                    var oldScale = _image.Scale;
+                    _image.Scale = 1.0;
+                    using (var rendered = _image.RenderImage(_frame))
+                    {
+                        using (var bmp = new Bitmap(rendered.AsBitmap()))
+                        {
+                            bmp.Save(fileName, System.Drawing.Imaging.ImageFormat.Png);
+                        }
+                    }
+                    _image.Scale = oldScale;
+                }
+                return;
+            }
+
             GrayscaleRenderOptions options = null;
 
             if (e.KeyCode == Keys.D0) options = GrayscaleRenderOptions.FromDataset(_image.Dataset);

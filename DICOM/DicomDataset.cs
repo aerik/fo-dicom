@@ -502,7 +502,31 @@ namespace Dicom
                     throw new DicomDataException("Element empty or index: {0} exceeds element count: {1}", n, element.Count);
                 }
 
-                return element.Get<T>(n);
+                try
+                {
+                    return element.Get<T>(n);
+                }
+                catch(InvalidCastException icx)
+                {
+                    try
+                    {
+                        //try coercing it to it's default VR
+                        if (!tag.DictionaryEntry.ValueRepresentations.Contains(element.ValueRepresentation))
+                        {
+                            string tempVal = element.Get<string>(-1);
+                            string[] eValues = tempVal.Split('\\');
+                            DicomDataset temp = new DicomDataset();
+                            temp.Add(item.Tag, eValues);
+                            if (temp._items.TryGetValue(tag, out item))
+                            {
+                                element = (DicomElement)item;
+                                return element.Get<T>(n);
+                            }
+                        }
+                    }
+                    catch { }
+                    throw;//the original exception
+                }
             }
 
             if (item.GetType() == typeof(DicomSequence))
