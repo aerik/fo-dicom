@@ -107,6 +107,8 @@ namespace Dicom {
 				virtual JpegNativeCodec^ GetCodec(int bits, DicomJpegParams^ jparams) override {
 					if (bits == 8)
 						return gcnew Jpeg8Codec(JpegMode::Baseline, 0, 0);
+					else if (bits <= 12) //allow for decoding 12 bit images with wrong transfer syntax
+						return gcnew Jpeg12Codec(JpegMode::Baseline, 0, 0);
 					else
 						throw gcnew DicomCodecException(String::Format("Unable to create JPEG Process 1 codec for bits stored == {0}", bits));
 				}
