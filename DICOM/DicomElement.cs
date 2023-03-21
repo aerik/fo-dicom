@@ -394,7 +394,11 @@ namespace Dicom
 
             if (typeof(T) == typeof(string))
             {
-                if (item < 0 || item >= Count) throw new ArgumentOutOfRangeException("item", "Index is outside the range of available value items");
+                if (item < 0 || item >= Count)
+                {
+                    if (item == 0 && Count == 0) return (T)(object)String.Empty;//so you can call Get<string>() - also consistent with Get<string[]>()
+                    throw new ArgumentOutOfRangeException("item", "Index is outside the range of available value items");
+                }
 
                 return (T)(object)ByteConverter.Get<Tv>(Buffer, item).ToString();
             }
