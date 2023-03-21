@@ -36,7 +36,7 @@ namespace Dicom.Network
         /// <param name="useTls">Use TLS layer?</param>
         /// <param name="noDelay">No delay?</param>
         /// <param name="ignoreSslPolicyErrors">Ignore SSL policy errors?</param>
-        internal DesktopNetworkStream(string host, int port, bool useTls, bool noDelay, bool ignoreSslPolicyErrors)
+        internal DesktopNetworkStream(string host, int port, bool useTls, bool noDelay, bool ignoreSslPolicyErrors, string certificateName)
         {
             this.RemoteHost = host;
             this.RemotePort = port;
@@ -51,19 +51,38 @@ namespace Dicom.Network
             Stream stream = this.tcpClient.GetStream();
             if (useTls)
             {
+                X509CertificateCollection certs = null;
+                if (!String.IsNullOrEmpty(certificateName))
+                {
+                    var cert = DesktopNetworkManager.GetX509Certificate(certificateName);
+                    if (cert != null) certs = new X509CertificateCollection(new X509Certificate[] { cert });
+                }
                 var ssl = new SslStream(
                     stream,
                     false,
-                    (sender, certificate, chain, errors) => errors == SslPolicyErrors.None || ignoreSslPolicyErrors);
+                    new RemoteCertificateValidationCallback(VerifyCertificate),null,EncryptionPolicy.RequireEncryption);
+#if !DEBUG
                 ssl.ReadTimeout = 5000;
                 ssl.WriteTimeout = 5000;
+#endif
 
 #if NETSTANDARD
                 ssl.AuthenticateAsClientAsync(host).Wait();
 #else
-                ssl.AuthenticateAsClient(host, null, SslProtocols.Tls11 | SslProtocols.Tls12, false);
+                //ssl.AuthenticateAsClientAsync(host, certs, SslProtocols.Tls11 | SslProtocols.Tls12, false).Wait(5000);
+                try
+                {
+                    ssl.AuthenticateAsClient(host, certs, SslProtocols.Tls11 | SslProtocols.Tls12, false);
+                }
+                catch (Exception x)
+                {
+                    string err = x.Message;
+                    throw new DicomNetworkException("Could not authenticate SSL connection as client: " + x.Message);
+                }
 #endif
                 stream = ssl;
+                this.Authenticated = ssl.IsMutuallyAuthenticated;
+                this.Encrypted = ssl.IsEncrypted; ;
                 stream.ReadTimeout = -1;
                 stream.WriteTimeout = -1;
             }
@@ -94,36 +113,135 @@ namespace Dicom.Network
             Stream stream = tcpClient.GetStream();
             if (certificate != null)
             {
-                var ssl = new SslStream(stream, false,null,null,EncryptionPolicy.RequireEncryption);
+                var ssl = new SslStream(stream, false, new RemoteCertificateValidationCallback(DummyCertificatValidationCallback),
+                    new LocalCertificateSelectionCallback(LocalCertificateValidationCallback), EncryptionPolicy.RequireEncryption);
+#if !DEBUG
                 ssl.ReadTimeout = 5000;
                 ssl.WriteTimeout = 5000;
+#endif
 #if NETSTANDARD
                 ssl.AuthenticateAsServerAsync(certificate, false, SslProtocols.Tls, false).Wait();
 #else
-                //this seems to need specific permissions to the certificate, otherwise can get "The credentials supplied to the package were not recognized"
-                ssl.AuthenticateAsServer(certificate, false, SslProtocols.Tls11 | SslProtocols.Tls12, false);
+                //clientCertificateRequired is only a request, not an actual requirement
+                //https://learn.microsoft.com/en-us/dotnet/api/system.net.security.sslstream.authenticateasserver?view=netframework-4.7.2
+                //ssl.AuthenticateAsServerAsync(certificate, true, SslProtocols.Tls11 | SslProtocols.Tls12, false).Wait(5000);
+                try
+                {
+                    ssl.AuthenticateAsServer(certificate, true, SslProtocols.Tls11 | SslProtocols.Tls12, false);
+                }
+                catch(Exception x)
+                {
+                    string err = x.Message;
+                    throw new DicomNetworkException("Could not authenticate SSL connection as server: " + x.Message);
+                }
+
+
 #endif
                 stream = ssl;
+                this.Authenticated = ssl.IsMutuallyAuthenticated;
+                this.Encrypted = ssl.IsEncrypted;
                 stream.ReadTimeout = -1;
                 stream.WriteTimeout = -1;
             }
 
             this.networkStream = stream;
         }
+        private static bool DummyCertificatValidationCallback(object sender, X509Certificate certificate, X509Chain chain, SslPolicyErrors sslPolicyErrors)
+        {
+            bool isOkay = false;
+            string logMsg = "Connection requested ";
+            if(certificate != null)
+            {
+                logMsg += "with certficate '" + certificate.Subject + "'";
+            }
+            else
+            {
+                logMsg += "with anonymous TLS encryption";
+            }
 
-        //static bool VerifyClientCertificate(object sender, X509Certificate certificate, X509Chain chain, SslPolicyErrors sslPolicyErrors)
-        //{
-        //    try
-        //    {
+            if(sslPolicyErrors == SslPolicyErrors.None)
+            {
+                isOkay = true;
+            }
+            else
+            {
+                //check for local certs
+                if (CertIsStoredLocally(certificate))
+                {
+                    isOkay = true;
+                    logMsg += ", matches local";
+                }
+                else
+                {
+                    logMsg += ", but has errors: " + sslPolicyErrors.ToString();
+                }
+            }
+            if(certificate != null)
+            {
+                logMsg += "\nCertificate:\n" + certificate.ToString().Replace("\r","").Replace("]\n","]").Replace("\n\n","\n");
+            }
+            if (isOkay)
+            {
+                Log.LogManager.GetLogger("DicomServer").Info(logMsg);
+                return true;
+            }
+            Log.LogManager.GetLogger("DicomServer").Warn(logMsg);
+            return false;
+        }
+        private static X509Certificate LocalCertificateValidationCallback(object sender, string targetHost, X509CertificateCollection localCertificates, X509Certificate remoteCertificate, string[] acceptableIssuers)
+        {
+            if (localCertificates != null && localCertificates.Count > 0) return localCertificates[0];
+            return null;
+        }
+        static bool VerifyCertificate(object sender, X509Certificate certificate, X509Chain chain, SslPolicyErrors sslPolicyErrors)
+        {
+            if(certificate == null)
+            {
+                Log.LogManager.GetLogger("DicomClient").Warn("TLS connection with no certificate");
+                return false;
+            }
+            if (sslPolicyErrors == SslPolicyErrors.None)
+            {
+                Log.LogManager.GetLogger("DicomClient").Info("TLS connection with certificate:" + certificate.Subject);
+                return true;
+            }
+            try
+            {
+                //check for local certs
+                if(CertIsStoredLocally(certificate)) return true;
+            }
+            catch (Exception ex)
+            {
+                //hmm
+            }
+            Log.LogManager.GetLogger("DicomClient").Warn("TLS connection with certificate:" + certificate.Subject + " has errors " + sslPolicyErrors.ToString());
+            return false;
+        }
 
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        Console.WriteLine(ex);
-        //    }
-
-        //    return false;
-        //}
+        private static bool CertIsStoredLocally(X509Certificate certificate)
+        {
+            X509Certificate2Collection certs = null;
+            string certSerial = certificate.GetSerialNumberString();
+            using (var store = new X509Store(StoreName.My, StoreLocation.LocalMachine))
+            {
+                store.Open(OpenFlags.ReadOnly);
+                certs = store.Certificates.Find(X509FindType.FindBySerialNumber, certSerial, false);
+            }
+            if (certs == null || certs.Count == 0)
+            {
+                using (var store = new X509Store("WebHosting", StoreLocation.LocalMachine))
+                {
+                    store.Open(OpenFlags.ReadOnly);
+                    certs = store.Certificates.Find(X509FindType.FindBySerialNumber, certSerial, false);
+                }
+            }
+            if (certs != null && certs.Count == 1 && certs[0].GetCertHashString() == certificate.GetCertHashString())
+            {
+                //todo: check cert validity?
+                return true;
+            }
+            return false;
+        }
 
         /// <summary>
         /// Destructor.
@@ -133,9 +251,9 @@ namespace Dicom.Network
             this.Dispose(false);
         }
 
-        #endregion
+#endregion
 
-        #region PROPERTIES
+#region PROPERTIES
 
         /// <summary>
         /// Gets the remote host of the network stream.
@@ -156,6 +274,10 @@ namespace Dicom.Network
         /// Gets the local port of the network stream.
         /// </summary>
         public int LocalPort { get; }
+
+        public bool Encrypted { get; }
+
+        public bool Authenticated { get; }
 
         #endregion
 
@@ -217,6 +339,6 @@ namespace Dicom.Network
             this.disposed = true;
         }
 
-        #endregion
+#endregion
     }
 }

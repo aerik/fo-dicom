@@ -166,6 +166,29 @@ namespace Dicom.Network
         /// </summary>
         public bool IsConnected { get; private set; }
 
+        public bool IsEncrypted { 
+            get
+            {
+                if(IsConnected && this._network != null)
+                {
+                    return this._network.Encrypted;
+                }
+                return false;
+            }
+        }
+
+        public bool IsAuthenticated
+        {
+            get
+            {
+                if (IsConnected && this._network != null)
+                {
+                    return this._network.Authenticated;
+                }
+                return false;
+            }
+        }
+
         /// <summary>
         /// Gets whether or not the send queue is empty.
         /// </summary>
@@ -597,8 +620,21 @@ namespace Dicom.Network
                                     {
                                         Logger = LogManager.GetLogger(Association.CalledAE);
                                     }
+                                    string reqStr = "{callingAE} <- Association request:\n{association}";
+                                    if (this.IsEncrypted)
+                                    {
+                                        if (this.IsAuthenticated)
+                                        {
+                                            reqStr = "{callingAE} <- Association request with mutually authenticated TLS:\n{association}";
+                                        }
+                                        else
+                                        {
+                                            reqStr = "{callingAE} <- Association request with anonymous TLS:\n{association}";
+                                        }
+
+                                    }
                                     Logger.Info(
-                                        "{callingAE} <- Association request:\n{association}",
+                                        reqStr,
                                         LogID,
                                         Association.ToString());
                                     AssociationState = DicomAssociationState.Requested;

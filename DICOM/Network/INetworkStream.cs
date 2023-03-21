@@ -33,6 +33,10 @@ namespace Dicom.Network
         /// </summary>
         int LocalPort { get; }
 
+        bool Encrypted { get; }
+
+        bool Authenticated { get; }
+
         #endregion
 
         #region METHODS

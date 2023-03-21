@@ -23,6 +23,8 @@ namespace Dicom.Network
 
         private readonly int _Port;
 
+        private readonly object _locker = new object();
+
         #endregion
 
         #region CONSTRUCTORS
@@ -73,57 +75,31 @@ namespace Dicom.Network
             bool noDelay,
             CancellationToken token)
         {
-            try
+            //just test the certificate when starting the listener
+            if (!string.IsNullOrEmpty(certificateName) && this.certificate == null)
             {
-                var awaiter =
-                    await
-                    Task.WhenAny(this.listener.AcceptTcpClientAsync(), Task.Delay(-1, token)).ConfigureAwait(false);
+                this.certificate = DesktopNetworkManager.GetX509Certificate(certificateName);
+            }
+            var awaiter =
+                await
+                Task.WhenAny(this.listener.AcceptTcpClientAsync(), Task.Delay(-1, token)).ConfigureAwait(false);
 
-                var tcpClientTask = awaiter as Task<TcpClient>;
-                if (tcpClientTask != null)
+            var tcpClientTask = awaiter as Task<TcpClient>;
+            if (tcpClientTask != null)
+            {
+                var tcpClient = tcpClientTask.Result;
+                tcpClient.NoDelay = noDelay;
+
+                if (!string.IsNullOrEmpty(certificateName) && this.certificate != null)
                 {
-                    var tcpClient = tcpClientTask.Result;
-                    tcpClient.NoDelay = noDelay;
-
-                    if (!string.IsNullOrEmpty(certificateName) && this.certificate == null)
-                    {
-                        this.certificate = GetX509Certificate(certificateName);
-                    }
-
-                    return new DesktopNetworkStream(tcpClient, this.certificate);
+                    //refresh the certifcate in case it's been updated while the service is running?
+                    var cert = DesktopNetworkManager.GetX509Certificate(certificateName);
+                    if (cert != null) this.certificate = cert;
                 }
 
-                return null;
+                return new DesktopNetworkStream(tcpClient, this.certificate);
             }
-            catch(Exception x)
-            {
-                return null;
-            }
-        }
-
-        /// <summary>
-        /// Get X509 certificate from the certificate store.
-        /// </summary>
-        /// <param name="certificateName">Certificate name.</param>
-        /// <returns>Certificate with the specified name.</returns>
-        private static X509Certificate GetX509Certificate(string certificateName)
-        {
-            var store = new X509Store(StoreName.My, StoreLocation.LocalMachine);
-
-            store.Open(OpenFlags.ReadOnly);
-            var certs = store.Certificates.Find(X509FindType.FindBySubjectName, certificateName, false);
-#if NETSTANDARD
-            store.Dispose();
-#else
-            store.Close();
-#endif
-
-            if (certs.Count == 0)
-            {
-                throw new DicomNetworkException("Unable to find certificate for " + certificateName);
-            }
-
-            return certs[0];
+            return null;
         }
 
         #endregion

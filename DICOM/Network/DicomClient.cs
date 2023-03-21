@@ -197,11 +197,11 @@ namespace Dicom.Network
         /// <param name="useTls">True if TLS security should be enabled, false otherwise.</param>
         /// <param name="callingAe">Calling Application Entity Title.</param>
         /// <param name="calledAe">Called Application Entity Title.</param>
-        public void Send(string host, int port, bool useTls, string callingAe, string calledAe)
+        public void Send(string host, int port, bool useTls, string callingAe, string calledAe, string certificateName=null)
         {
             if (!CanSend) return;
 
-            GetNetworkStream(host, port, useTls);
+            GetNetworkStream(host, port, useTls, certificateName);
 
             var assoc = new DicomAssociation(callingAe, calledAe)
             {
@@ -231,9 +231,9 @@ namespace Dicom.Network
         /// <param name="callingAe">Calling Application Entity Title.</param>
         /// <param name="calledAe">Called Application Entity Title.</param>
         /// <returns>Awaitable task.</returns>
-        public Task SendAsync(string host, int port, bool useTls, string callingAe, string calledAe)
+        public Task SendAsync(string host, int port, bool useTls, string callingAe, string calledAe, string certificateName=null)
         {
-            return SendAsync(host, port, useTls, callingAe, calledAe, CancellationToken.None);
+            return SendAsync(host, port, useTls, callingAe, calledAe, CancellationToken.None, certificateName);
         }
 
         /// <summary>
@@ -246,11 +246,11 @@ namespace Dicom.Network
         /// <param name="calledAe">Called Application Entity Title.</param>
         /// <param name="cancelTok">When cancelled, stops after the next request is sent</param>
         /// <returns>Awaitable task.</returns>
-        public Task SendAsync(string host, int port, bool useTls, string callingAe, string calledAe, CancellationToken cancelTok)
+        public Task SendAsync(string host, int port, bool useTls, string callingAe, string calledAe, CancellationToken cancelTok, string certificateName)
         {
             if (!CanSend) Task.FromResult(false);   // TODO Replace with Task.CompletedTask when moving to .NET 4.6
 
-            GetNetworkStream(host, port, useTls);
+            GetNetworkStream(host, port, useTls, certificateName);
 
             var assoc = new DicomAssociation(callingAe, calledAe)
             {
@@ -263,12 +263,12 @@ namespace Dicom.Network
             return DoSendAsync(this.networkStream, assoc, cancelTok);
         }
 
-        public INetworkStream GetNetworkStream(string host, int port, bool useTls)
+        public INetworkStream GetNetworkStream(string host, int port, bool useTls, string certificateName=null)
         {
             var noDelay = Options?.TcpNoDelay ?? DicomServiceOptions.Default.TcpNoDelay;
             var ignoreSslPolicyErrors = Options?.IgnoreSslPolicyErrors
                                         ?? DicomServiceOptions.Default.IgnoreSslPolicyErrors;
-            this.networkStream = NetworkManager.CreateNetworkStream(host, port, useTls, noDelay, ignoreSslPolicyErrors);
+            this.networkStream = NetworkManager.CreateNetworkStream(host, port, useTls, noDelay, ignoreSslPolicyErrors, certificateName);
             this.ownsNetworkStream = true;
             return this.networkStream;
         }

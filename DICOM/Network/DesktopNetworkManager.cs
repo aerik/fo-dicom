@@ -7,6 +7,7 @@ namespace Dicom.Network
     using System.Globalization;
     using System.Net.NetworkInformation;
     using System.Net.Sockets;
+    using System.Security.Cryptography.X509Certificates;
 
     /// <summary>
     /// .NET implementation of <see cref="NetworkManager"/>.
@@ -75,9 +76,9 @@ namespace Dicom.Network
         /// <param name="noDelay">No delay?</param>
         /// <param name="ignoreSslPolicyErrors">Ignore SSL policy errors?</param>
         /// <returns>Network stream implementation.</returns>
-        protected override INetworkStream CreateNetworkStreamImpl(string host, int port, bool useTls, bool noDelay, bool ignoreSslPolicyErrors)
+        protected override INetworkStream CreateNetworkStreamImpl(string host, int port, bool useTls, bool noDelay, bool ignoreSslPolicyErrors, string certificateName)
         {
-            return new DesktopNetworkStream(host, port, useTls, noDelay, ignoreSslPolicyErrors);
+            return new DesktopNetworkStream(host, port, useTls, noDelay, ignoreSslPolicyErrors, certificateName);
         }
 
         /// <summary>
@@ -106,6 +107,61 @@ namespace Dicom.Network
             return false;
         }
 #endif
+
+        /// <summary>
+        /// Get X509 certificate from the certificate store.
+        /// </summary>
+        /// <param name="certificateName">Certificate name.</param>
+        /// <returns>Certificate with the specified name.</returns>
+        internal static X509Certificate GetX509Certificate(string certificateName)
+        {
+            try
+            {
+                X509Certificate2Collection certs = null;
+                using (var store = new X509Store(StoreName.My, StoreLocation.LocalMachine))
+                {
+                    store.Open(OpenFlags.ReadOnly);
+                    certs = store.Certificates.Find(X509FindType.FindBySubjectName, certificateName, false);
+                }
+
+                if (certs.Count == 0)
+                {
+                    using (var store = new X509Store("WebHosting", StoreLocation.LocalMachine))
+                    {
+                        store.Open(OpenFlags.ReadOnly);
+                        certs = store.Certificates.Find(X509FindType.FindBySubjectName, certificateName, false);
+                    }
+                }
+
+                if (certs.Count == 0)
+                {
+                    throw new DicomNetworkException("Unable to find certificate for " + certificateName);
+                }
+                X509Certificate2 cert = certs[0];
+                //check that we can access the private key, which we need to to to authenticate as server
+                const String RSA = "1.2.840.113549.1.1.1";
+                const String DSA = "1.2.840.10040.4.1";
+                const String ECC = "1.2.840.10045.2.1";
+                object privateKey = null;
+                switch (cert.PublicKey.Oid.Value)
+                {
+                    case RSA:
+                        privateKey = cert.GetRSAPrivateKey();
+                        break;
+                    case DSA:
+                        privateKey = cert.GetDSAPrivateKey();
+                        break;
+                    case ECC:
+                        privateKey = cert.GetECDsaPrivateKey();
+                        break;
+                }
+                return cert;
+            }
+            catch(Exception x)
+            {
+                throw new DicomNetworkException("Cannot load private key for certificate: " + certificateName, x);
+            }
+        }
 
         /// <summary>
         /// Platform-specific implementation to attempt to obtain a unique network identifier, e.g. based on a MAC address.
