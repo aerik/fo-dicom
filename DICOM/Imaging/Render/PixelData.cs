@@ -121,8 +121,12 @@ namespace Dicom.Imaging.Render
             else if (pi == PhotometricInterpretation.Monochrome1 || pi == PhotometricInterpretation.Monochrome2
                      || pi == PhotometricInterpretation.PaletteColor)
             {
-                if (pixelData.BitsAllocated == 8 && pixelData.HighBit == 7 && pixelData.BitsStored == 8)
+                //high bit should always be one less than Bits Stored, but could be broken
+                if (pixelData.BitsAllocated == 8 && pixelData.BitsStored == 8) //&& pixelData.HighBit == 7 
+                {
+                    if (pixelData.HighBit > 7) pixelData.HighBit = 7;//:-(  Fix for broken modality
                     return new GrayscalePixelDataU8(pixelData.Width, pixelData.Height, pixelData.GetFrame(frame));
+                }
                 else if (pixelData.BitsAllocated <= 16)
                 {
                     if (pixelData.PixelRepresentation == PixelRepresentation.Signed)
