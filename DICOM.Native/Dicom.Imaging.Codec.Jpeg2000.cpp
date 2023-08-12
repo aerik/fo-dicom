@@ -32,6 +32,12 @@ extern "C" {
         //Dicom::Debug::Log->Info("OpenJPEG: {0}", gcnew String(msg));
     }
 }
+// Twelve and four first values for JPEG2000 buffer image (j2k and jp2 decode formats)
+/*----------------------------------------------------------------------------------*/
+#define JP2_RFC3745_MAGIC "\x00\x00\x00\x0c\x6a\x50\x20\x20\x0d\x0a\x87\x0a"
+#define JP2_MAGIC "\x0d\x0a\x87\x0a"
+#define J2K_CODESTREAM_MAGIC "\xff\x4f\xff\x51"
+
 
 namespace Dicom {
     namespace Imaging {
@@ -48,6 +54,36 @@ namespace Dicom {
                     return CLRSPC_SYCC;
                 else
                     return CLRSPC_UNKNOWN;
+            }
+
+            OPJ_CODEC_FORMAT GetCodecFormat(unsigned char* buffer)
+            {
+                unsigned char buf12[12];
+
+                OPJ_CODEC_FORMAT opj_buffer_format;
+
+                //Copying 12 first values from image buffer
+                memcpy(buf12, buffer, sizeof(unsigned char) * 12);
+
+                //Comparing 12 or 4 first values from image buffer to get the JPEG2000 decode format
+                if (memcmp(buf12, JP2_RFC3745_MAGIC, 12) == 0 || memcmp(buf12, JP2_MAGIC, 4) == 0)
+                {
+                    opj_buffer_format = OPJ_CODEC_FORMAT::CODEC_JP2;
+
+                    return opj_buffer_format;
+                }
+                else if (memcmp(buf12, J2K_CODESTREAM_MAGIC, 4) == 0)
+                {
+                    opj_buffer_format = OPJ_CODEC_FORMAT::CODEC_J2K;
+
+                    return opj_buffer_format;
+                }
+                else
+                {
+                    opj_buffer_format = OPJ_CODEC_FORMAT::CODEC_UNKNOWN;
+                }
+
+                return opj_buffer_format;
             }
 
             void DicomJpeg2000NativeCodec::Encode(DicomPixelData^ oldPixelData, DicomPixelData^ newPixelData, DicomCodecParams^ parameters) {
@@ -281,8 +317,16 @@ namespace Dicom {
                     dparams.cp_layer = 0;
                     dparams.cp_reduce = 0;
 
+                    unsigned char* buf = (unsigned char*)(void*)jpegArray->Pointer;
+
+                    OPJ_CODEC_FORMAT format;
+
                     try {
-                        dinfo = opj_create_decompress(CODEC_J2K);
+                        format = GetCodecFormat(buf);
+
+                        dinfo = opj_create_decompress(format);
+
+                        dparams.decod_format = format;
 
                         opj_set_event_mgr((opj_common_ptr)dinfo, &event_mgr, NULL);
 
@@ -291,7 +335,7 @@ namespace Dicom {
                         bool opj_err = false;
                         dinfo->client_data = (void*)&opj_err;
 
-                        cio = opj_cio_open((opj_common_ptr)dinfo, (unsigned char*)(void*)jpegArray->Pointer, (int)jpegArray->ByteSize);
+                        cio = opj_cio_open((opj_common_ptr)dinfo, buf, (int)jpegArray->ByteSize);
                         image = opj_decode(dinfo, cio);
 
                         if (image == nullptr)
