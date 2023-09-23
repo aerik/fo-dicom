@@ -3,10 +3,9 @@
 
 namespace Dicom.Imaging.Render
 {
+    using Dicom.Imaging.LUT;
     using System;
     using System.Collections.Generic;
-
-    using Dicom.Imaging.LUT;
 
     /// <summary>
     /// The Image Graphic implementation of <seealso cref="IGraphic"/>

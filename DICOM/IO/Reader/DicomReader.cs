@@ -414,7 +414,7 @@ namespace Dicom.IO.Reader
                             // change 20161216: if changing from UN to UL then ParseLength causes a error, since length in UL is 2 bytes while length in UN is 6 bytes. 
                             // so the source hat UN and coded the length in 6 bytes. if here the VR was changed to UL then ParseLength would only read 2 bytes and the parser is then wrong.
                             // but no worry: in ParseValue in the first lines there is a lookup in the Dictionary of DicomTags and there the VR is changed to UL so that the value is finally interpreted correctly as UL.
-                           // this._vr = DicomVR.UL;
+                            // this._vr = DicomVR.UL;
                             break;
                         }
                         if (this.isExplicitVR)
@@ -637,7 +637,7 @@ namespace Dicom.IO.Reader
                     }
                     //read broken jpeg fragments? - Aerik
                     //this doesn't break, but there's more to it than this
-                    if(this._tag == DicomTag.PixelData)
+                    if (this._tag == DicomTag.PixelData)
                     {
                         source.Mark();
                         if (source.Require(1032)) // 8 + 1024
@@ -652,7 +652,7 @@ namespace Dicom.IO.Reader
                                 string hexBytes = BitConverter.ToString(scanner).Replace("-", string.Empty);
                                 int soi = hexBytes.IndexOf("FFD8FFE0");
                                 int jfif = hexBytes.IndexOf("4A46494600");
-                                if(soi > -1 && jfif > soi)
+                                if (soi > -1 && jfif > soi)
                                 {
                                     source.Rewind();
                                     this.length = UndefinedLength;

@@ -3,7 +3,6 @@
 
 namespace Dicom.IO.Writer
 {
-    using System;
     using System.IO;
     using System.IO.Compression;
 

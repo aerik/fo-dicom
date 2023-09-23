@@ -5,10 +5,9 @@ using System;
 
 namespace Dicom.Imaging
 {
-    using System.Collections.Generic;
-
     using Dicom.Imaging.Render;
     using Dicom.IO;
+    using System.Collections.Generic;
 
     /// <summary>
     /// Image interface.

@@ -1,12 +1,11 @@
 ﻿// Copyright (c) 2012-2017 fo-dicom contributors.
 // Licensed under the Microsoft Public License (MS-PL).
 
+using Dicom.IO;
+using Dicom.IO.Buffer;
+using Dicom.IO.Reader;
 using System.Collections.Generic;
 using System.Linq;
-
-using Dicom.IO;
-using Dicom.IO.Reader;
-using Dicom.IO.Buffer;
 
 namespace Dicom.Media
 {

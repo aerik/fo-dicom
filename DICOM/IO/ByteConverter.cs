@@ -1,15 +1,12 @@
 ﻿// Copyright (c) 2012-2017 fo-dicom contributors.
 // Licensed under the Microsoft Public License (MS-PL).
 
-using System;
-using System.Collections;
-using System.Linq;
-using System.Runtime.InteropServices;
-using System.Text;
-
-using Dicom.IO.Buffer;
 using Dicom.Imaging.Mathematics
 ;
+using Dicom.IO.Buffer;
+using System;
+using System.Runtime.InteropServices;
+using System.Text;
 
 namespace Dicom.IO
 {

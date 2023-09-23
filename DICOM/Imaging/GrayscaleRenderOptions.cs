@@ -1,9 +1,8 @@
 ﻿// Copyright (c) 2012-2017 fo-dicom contributors.
 // Licensed under the Microsoft Public License (MS-PL).
 
-using System;
-
 using Dicom.Imaging.Codec;
+using System;
 
 namespace Dicom.Imaging
 {
@@ -298,7 +297,7 @@ namespace Dicom.Imaging
                 if (dataset.Contains(DicomTag.VOILUTSequence))
                 {
                     DicomSequence temp = dataset.Get<DicomSequence>(DicomTag.VOILUTSequence);
-                    if(temp != null && temp.Items.Count > 0 && temp.Items[0].Contains(DicomTag.LUTData))
+                    if (temp != null && temp.Items.Count > 0 && temp.Items[0].Contains(DicomTag.LUTData))
                     {
                         voiLutSeq = temp;
                     }

@@ -3,10 +3,9 @@
 
 namespace Dicom.Printing
 {
+    using Dicom.Imaging.Mathematics;
     using System;
     using System.Drawing;
-
-    using Dicom.Imaging.Mathematics;
 
     /// <summary>
     /// Extension methods on instance of the <see cref="FilmBox"/> class.

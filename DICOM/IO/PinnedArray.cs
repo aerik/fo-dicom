@@ -126,7 +126,7 @@ namespace Dicom.IO
         {
             if (_data != null)
             {
-                if(_handle.IsAllocated)
+                if (_handle.IsAllocated)
                 {
                     _handle.Free();
                 }

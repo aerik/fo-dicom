@@ -22,4 +22,26 @@ namespace Dicom
         {
         }
     }
+
+    public class DicomValidationException : DicomDataException
+    {
+
+        /// <summary>The string-content that does not validate.</summary>
+        public string Content { get; private set; }
+
+        /// <summary>The value representation that validates.</summary>
+        public DicomVR VR { get; private set; }
+
+
+        public DicomValidationException(string content, DicomVR vr, string message)
+           : base(message)
+        {
+            Content = content;
+            VR = vr;
+        }
+
+
+        public override string Message => $"Content \"{Content}\" does not validate VR {VR.Code}: {base.Message}";
+
+    }
 }

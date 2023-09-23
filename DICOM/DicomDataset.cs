@@ -3,13 +3,12 @@
 
 namespace Dicom
 {
+    using Dicom.IO.Buffer;
+    using Dicom.StructuredReport;
     using System;
     using System.Collections.Generic;
     using System.Linq;
     using System.Reflection;
-
-    using Dicom.IO.Buffer;
-    using Dicom.StructuredReport;
 
 
     /// <summary>
@@ -51,9 +50,10 @@ namespace Dicom
         /// Initializes a new instance of the <see cref="DicomDataset"/> class.
         /// </summary>
         /// <param name="items">A collection of DICOM items.</param>
-        public DicomDataset(IEnumerable<DicomItem> items)
+        public DicomDataset(IEnumerable<DicomItem> items, bool validate = false)
             : this()
         {
+            ValidateItems = validate;
             if (items != null)
             {
                 foreach (var item in items.Where(item => item != null))
@@ -69,6 +69,10 @@ namespace Dicom
                     }
                     else
                     {
+                        if (ValidateItems)
+                        {
+                            item.Validate();
+                        }
                         _items[item.Tag] = item;
                     }
                 }
@@ -101,6 +105,21 @@ namespace Dicom
             }
         }
 
+        internal bool _validateItems = false;//new feature, being careful with this
+        internal bool ValidateItems
+        {
+            get => _validateItems && DicomValidation.PerformValidation;
+            set => _validateItems = value;
+        }
+        /// <summary>
+        /// Gets or sets if the content of DicomItems shall be validated as soon as they are added to the DicomDataset
+        /// </summary>
+        [Obsolete("Use this property with care. You can suppress validation, but be aware you might create invalid Datasets if you need to set this property.", false)]
+        public bool AutoValidate
+        {
+            get => _validateItems;
+            set => ValidateItems = value;
+        }
         #endregion
 
         #region METHODS
@@ -178,7 +197,7 @@ namespace Dicom
             if (tag.Element >= 0xff) return tag;
 
             ushort group = 0x0010;
-            for (;; group++)
+            for (; ; group++)
             {
                 var creator = new DicomTag(tag.Group, group);
                 if (!Contains(creator))
@@ -303,16 +322,16 @@ namespace Dicom
         /// If parameter is not provided (null), then the default TransferSyntax "ExplicitVRLittleEndian" will be applied to the dataset</param>
         /// <remarks>Use this method whenever you are attaching an external image pixel data to the dataset and provide the proper TransferSyntax</remarks>
         /// <returns>The dataset instance.</returns>
-        public DicomDataset AddOrUpdatePixelData (DicomVR vr, IByteBuffer pixelData, DicomTransferSyntax transferSyntax = null ) 
+        public DicomDataset AddOrUpdatePixelData(DicomVR vr, IByteBuffer pixelData, DicomTransferSyntax transferSyntax = null)
         {
-            this.AddOrUpdate ( vr, DicomTag.PixelData, pixelData ) ;
-            
+            this.AddOrUpdate(vr, DicomTag.PixelData, pixelData);
+
             if (null != transferSyntax)
             {
-                InternalTransferSyntax = transferSyntax ;
+                InternalTransferSyntax = transferSyntax;
             }
 
-            return this ;
+            return this;
         }
 
         /// <summary>
@@ -506,7 +525,7 @@ namespace Dicom
                 {
                     return element.Get<T>(n);
                 }
-                catch(InvalidCastException icx)
+                catch (InvalidCastException)
                 {
                     try
                     {
@@ -560,11 +579,13 @@ namespace Dicom
                     {
                         //_items[item.Tag.IsPrivate ? GetPrivateTag(item.Tag) : item.Tag] = item;
                         var tag = item.Tag;
+                        //ValidateTag(tag);
                         if (tag.IsPrivate)
                         {
                             tag = GetPrivateTag(tag);
                             item.Tag = tag;
-                        }                        
+                        }
+                        if (ValidateItems) item.Validate();
                         _items[tag] = item;
                     }
                 }
@@ -574,11 +595,13 @@ namespace Dicom
                     {
                         //_items.Add(item.Tag.IsPrivate ? GetPrivateTag(item.Tag) : item.Tag, item);
                         var tag = item.Tag;
+                        //ValidateTag(tag);
                         if (tag.IsPrivate)
                         {
                             tag = GetPrivateTag(tag);
                             item.Tag = tag;
-                        }                        
+                        }
+                        if (ValidateItems) item.Validate();
                         _items.Add(tag, item);
                     }
                 }
@@ -597,11 +620,13 @@ namespace Dicom
             if (item != null)
             {
                 var tag = item.Tag;
+                //ValidateTag(tag);
                 if (tag.IsPrivate)
                 {
                     tag = GetPrivateTag(tag);
                     item.Tag = tag;
                 }
+                if (ValidateItems) item.Validate();
                 if (allowUpdate)
                 {
                     _items[tag] = item;

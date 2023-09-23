@@ -147,7 +147,7 @@ namespace Dicom.Network
         /// <summary>
         /// Gets the association negotiation result.
         /// </summary>
-        public DicomPresentationContextResult Result =>_result;
+        public DicomPresentationContextResult Result => _result;
 
         /// <summary>
         /// Gets the abstact syntax associated with the presentation context.

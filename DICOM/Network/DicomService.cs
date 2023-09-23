@@ -3,6 +3,11 @@
 
 namespace Dicom.Network
 {
+    using Dicom.Imaging.Codec;
+    using Dicom.IO;
+    using Dicom.IO.Reader;
+    using Dicom.IO.Writer;
+    using Dicom.Log;
     using System;
     using System.Collections.Generic;
     using System.IO;
@@ -11,18 +16,12 @@ namespace Dicom.Network
     using System.Threading;
     using System.Threading.Tasks;
 
-    using Dicom.Imaging.Codec;
-    using Dicom.IO;
-    using Dicom.IO.Reader;
-    using Dicom.IO.Writer;
-    using Dicom.Log;
-
     /// <summary>
     /// Base class for DICOM network services.
     /// </summary>
     public abstract class DicomService : IDisposable
     {
-        public enum DicomAssociationState {None=0, Requested=1, Accepted=2, Rejected=3, ReleaseRequested=4, Released=5 }
+        public enum DicomAssociationState { None = 0, Requested = 1, Accepted = 2, Rejected = 3, ReleaseRequested = 4, Released = 5 }
 
         #region FIELDS
 
@@ -117,7 +116,7 @@ namespace Dicom.Network
                 lock (_SpeedLocker)
                 {
                     //use transfer time since CalcSpeed could conceivably be called with zero bytes
-                    if(_LastNetworkReceive > _LastNetworkSend)
+                    if (_LastNetworkReceive > _LastNetworkSend)
                     {
                         return _LastNetworkReceive;
                     }
@@ -166,10 +165,11 @@ namespace Dicom.Network
         /// </summary>
         public bool IsConnected { get; private set; }
 
-        public bool IsEncrypted { 
+        public bool IsEncrypted
+        {
             get
             {
-                if(IsConnected && this._network != null)
+                if (IsConnected && this._network != null)
                 {
                     return this._network.Encrypted;
                 }
@@ -262,7 +262,7 @@ namespace Dicom.Network
                     logMsg += "Total bytes sent: " + _TotalBytesSent + ", Total bytes received: " + _TotalBytesReceived;
                     logMsg += " Total connection time: " + connectedTime.TotalSeconds + " seconds";
                 }
-                if(AssociationState == DicomAssociationState.Released || AssociationState == DicomAssociationState.None)
+                if (AssociationState == DicomAssociationState.Released || AssociationState == DicomAssociationState.None)
                 {
                     Logger.Info(logMsg);
                 }
@@ -278,7 +278,7 @@ namespace Dicom.Network
 
         private void CalcSpeed(long byteCount, double networkMs, bool dirIsUp, bool force = false)
         {
-            string logMsg = null;            
+            string logMsg = null;
             lock (_SpeedLocker)
             {
                 if (dirIsUp)
@@ -298,7 +298,7 @@ namespace Dicom.Network
                 TimeSpan ts = DateTime.Now - _SpeedCheckTime;
                 double totalMs = ts.TotalMilliseconds;
                 long totalBytes = _BytesReceivedCounter + _BytesSentCounter;
-                if((force && totalMs>0) || totalMs > 5000)
+                if ((force && totalMs > 0) || totalMs > 5000)
                 {
                     double bytesSentPerMs = _BytesSentCounter / _NetworkSentMs;
                     double bytesRecdPerMs = _BytesReceivedCounter / _NetworkReceivedMs;
@@ -306,7 +306,7 @@ namespace Dicom.Network
                     uint upMbps = (uint)Math.Round(bytesSentPerMs * 8 / 1000);
                     uint downMbps = (uint)Math.Round(bytesRecdPerMs * 8 / 1000);
                     uint totalMbps = (uint)Math.Round(bytesTotalPerMs * 8 / 1000);
-                    logMsg = "Speed: " + totalMbps + "Mbps total , " + upMbps + "Mbps up (" + _BytesSentCounter+" bytes), " + downMbps + "Mbps down (" + _BytesReceivedCounter+" bytes)";
+                    logMsg = "Speed: " + totalMbps + "Mbps total , " + upMbps + "Mbps up (" + _BytesSentCounter + " bytes), " + downMbps + "Mbps down (" + _BytesReceivedCounter + " bytes)";
                     _BytesSentCounter = 0;
                     _BytesReceivedCounter = 0;
                     _NetworkSentMs = 0;
@@ -316,7 +316,7 @@ namespace Dicom.Network
             }
             if (logMsg != null && this.Association != null)
             {
-                Logger.Info("{logAE} <-> "+logMsg, LogID);
+                Logger.Info("{logAE} <-> " + logMsg, LogID);
             }
         }
 
@@ -441,7 +441,7 @@ namespace Dicom.Network
                 MemoryStream ms = new MemoryStream();
 
                 string pduName = "unknown";
-                if (pdu != null) pduName = pdu.GetType().Name;                
+                if (pdu != null) pduName = pdu.GetType().Name;
                 pdu.Write().WritePDU(ms);
                 byte[] buffer = ms.ToArray();
                 string logMsg = "";
@@ -455,7 +455,8 @@ namespace Dicom.Network
                     {
                         lock (_networkCounterLock) _networkCounter++;
                         var nStream = _network.AsStream();
-                        if (nStream.CanWrite) {
+                        if (nStream.CanWrite)
+                        {
                             await nStream.WriteAsync(buffer, 0, buffer.Length).ConfigureAwait(false);
                             forceCalcSpeed = false;
                             if (Options.LogDataPDUs) Logger.Debug("{logId} -> Sent PDU {pdu}", LogID, pdu);
@@ -464,7 +465,7 @@ namespace Dicom.Network
                         {
                             Logger.Warn(logMsg + "Could not write " + bytesToWrite + " bytes for " + pduName + " to stream");
                         }
-                        lock (_networkCounterLock) _networkCounter--;     
+                        lock (_networkCounterLock) _networkCounter--;
                     }
                 }
                 catch (ObjectDisposedException)
@@ -525,7 +526,7 @@ namespace Dicom.Network
             int numBytes = stream.Read(buffer, offset, count);
             lock (_networkCounterLock) _networkCounter--;
             TimeSpan elapsed = DateTime.Now - start;
-            Logger.Debug("Read " + numBytes + " bytes after " + elapsed.TotalMilliseconds);
+            //Logger.Debug("Read " + numBytes + " bytes after " + elapsed.TotalMilliseconds);
             CalcSpeed(numBytes, elapsed.TotalMilliseconds, false);
             return numBytes;
         }
@@ -545,7 +546,7 @@ namespace Dicom.Network
                         var buffer = new byte[6];
                         var count = 0;
                         if (stream.CanRead)
-                        {                            
+                        {
                             count = ReadStream(stream, buffer, 0, 6);
                         }
                         do
@@ -557,7 +558,7 @@ namespace Dicom.Network
                                     string logMsg = "";
                                     if (LogID != null) logMsg = LogID;
                                     Logger.Info(logMsg + " No Bytes read - disconnecting");
-                                    TryCloseConnection(null,true);
+                                    TryCloseConnection(null, true);
                                 }
                                 return;
                             }
@@ -1259,7 +1260,7 @@ namespace Dicom.Network
             }
             else
             {
-                if(msg is DicomRequest)
+                if (msg is DicomRequest)
                 {
                     DicomRequest req = msg as DicomRequest;
                     req.OnBeforeSendRequest?.Invoke();
@@ -1387,7 +1388,7 @@ namespace Dicom.Network
                         logMsg += exception.Message;
                     }
                 }
-                if((AssociationState != DicomAssociationState.Released && AssociationState != DicomAssociationState.None) || exception != null)
+                if ((AssociationState != DicomAssociationState.Released && AssociationState != DicomAssociationState.None) || exception != null)
                 {
                     Logger.Warn(logMsg);
                 }

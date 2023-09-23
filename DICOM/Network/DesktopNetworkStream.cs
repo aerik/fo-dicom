@@ -60,7 +60,7 @@ namespace Dicom.Network
                 var ssl = new SslStream(
                     stream,
                     false,
-                    new RemoteCertificateValidationCallback(VerifyCertificate),null,EncryptionPolicy.RequireEncryption);
+                    new RemoteCertificateValidationCallback(VerifyCertificate), null, EncryptionPolicy.RequireEncryption);
 #if !DEBUG
                 ssl.ReadTimeout = 5000;
                 ssl.WriteTimeout = 5000;
@@ -129,7 +129,7 @@ namespace Dicom.Network
                 {
                     ssl.AuthenticateAsServer(certificate, true, SslProtocols.Tls11 | SslProtocols.Tls12, false);
                 }
-                catch(Exception x)
+                catch (Exception x)
                 {
                     string err = x.Message;
                     throw new DicomNetworkException("Could not authenticate SSL connection as server: " + x.Message);
@@ -150,7 +150,7 @@ namespace Dicom.Network
         {
             bool isOkay = false;
             string logMsg = "Connection requested ";
-            if(certificate != null)
+            if (certificate != null)
             {
                 logMsg += "with certficate '" + certificate.Subject + "'";
             }
@@ -159,7 +159,7 @@ namespace Dicom.Network
                 logMsg += "with anonymous TLS encryption";
             }
 
-            if(sslPolicyErrors == SslPolicyErrors.None)
+            if (sslPolicyErrors == SslPolicyErrors.None)
             {
                 isOkay = true;
             }
@@ -176,9 +176,9 @@ namespace Dicom.Network
                     logMsg += ", but has errors: " + sslPolicyErrors.ToString();
                 }
             }
-            if(certificate != null)
+            if (certificate != null)
             {
-                logMsg += "\nCertificate:\n" + certificate.ToString().Replace("\r","").Replace("]\n","]").Replace("\n\n","\n");
+                logMsg += "\nCertificate:\n" + certificate.ToString().Replace("\r", "").Replace("]\n", "]").Replace("\n\n", "\n");
             }
             if (isOkay)
             {
@@ -195,7 +195,7 @@ namespace Dicom.Network
         }
         static bool VerifyCertificate(object sender, X509Certificate certificate, X509Chain chain, SslPolicyErrors sslPolicyErrors)
         {
-            if(certificate == null)
+            if (certificate == null)
             {
                 Log.LogManager.GetLogger("DicomClient").Warn("TLS connection with no certificate");
                 return false;
@@ -208,11 +208,11 @@ namespace Dicom.Network
             try
             {
                 //check for local certs
-                if(CertIsStoredLocally(certificate)) return true;
+                if (CertIsStoredLocally(certificate)) return true;
             }
             catch (Exception ex)
             {
-                //hmm
+                Log.LogManager.GetLogger("DicomClient").Warn("TLS certificate:" + certificate.Subject + " could not be located: " + ex.Message);
             }
             Log.LogManager.GetLogger("DicomClient").Warn("TLS connection with certificate:" + certificate.Subject + " has errors " + sslPolicyErrors.ToString());
             return false;
@@ -251,9 +251,9 @@ namespace Dicom.Network
             this.Dispose(false);
         }
 
-#endregion
+        #endregion
 
-#region PROPERTIES
+        #region PROPERTIES
 
         /// <summary>
         /// Gets the remote host of the network stream.
@@ -285,7 +285,7 @@ namespace Dicom.Network
 
         public Socket GetSocket()
         {
-            if(this.tcpClient != null)
+            if (this.tcpClient != null)
             {
                 return this.tcpClient.Client;
             }
@@ -339,6 +339,6 @@ namespace Dicom.Network
             this.disposed = true;
         }
 
-#endregion
+        #endregion
     }
 }

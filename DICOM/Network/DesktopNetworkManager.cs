@@ -132,7 +132,6 @@ namespace Dicom.Network
                         certs = store.Certificates.Find(X509FindType.FindBySubjectName, certificateName, false);
                     }
                 }
-
                 if (certs.Count == 0)
                 {
                     throw new DicomNetworkException("Unable to find certificate for " + certificateName);
@@ -157,7 +156,7 @@ namespace Dicom.Network
                 }
                 return cert;
             }
-            catch(Exception x)
+            catch (Exception x)
             {
                 throw new DicomNetworkException("Cannot load private key for certificate: " + certificateName, x);
             }

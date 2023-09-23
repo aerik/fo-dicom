@@ -5,9 +5,8 @@ using System.Text;
 
 namespace Dicom.Network
 {
-    using System;
-
     using Dicom.Log;
+    using System;
 
     public class DicomCEchoProvider : DicomService, IDicomServiceProvider, IDicomCEchoProvider
     {

@@ -5,9 +5,8 @@ using System.Threading.Tasks;
 
 namespace Dicom.Network
 {
-    using System;
-
     using Dicom.Log;
+    using System;
 
     /// <summary>
     /// Interface representing a DICOM server instance.

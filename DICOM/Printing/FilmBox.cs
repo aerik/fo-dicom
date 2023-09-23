@@ -3,14 +3,13 @@
 
 namespace Dicom.Printing
 {
+    using Dicom.Imaging.Mathematics;
+    using Dicom.IO;
+    using Dicom.Log;
     using System;
     using System.Collections.Generic;
     using System.IO;
     using System.Linq;
-
-    using Dicom.Imaging.Mathematics;
-    using Dicom.IO;
-    using Dicom.Log;
 
     /// <summary>
     /// Basic film box
@@ -711,17 +710,17 @@ namespace Dicom.Printing
                     {
                         boxes.Add(
                             new RectF
-                                {
-                                    X = marginBounds.X + c * boxWidth,
-                                    Y = marginBounds.Y + r * boxHeight,
-                                    Width = boxWidth,
-                                    Height = boxHeight
-                                });
+                            {
+                                X = marginBounds.X + c * boxWidth,
+                                Y = marginBounds.Y + r * boxHeight,
+                                Width = boxWidth,
+                                Height = boxHeight
+                            });
                     }
                 }
                 return boxes.ToArray();
             }
-            
+
             return null;
         }
 
@@ -751,12 +750,12 @@ namespace Dicom.Printing
                     {
                         boxes.Add(
                             new RectF
-                                {
-                                    X = marginBounds.X + c * boxWidth,
-                                    Y = marginBounds.Y + r * boxHeight,
-                                    Width = boxWidth,
-                                    Height = boxHeight
-                                });
+                            {
+                                X = marginBounds.X + c * boxWidth,
+                                Y = marginBounds.Y + r * boxHeight,
+                                Width = boxWidth,
+                                Height = boxHeight
+                            });
                     }
                 }
                 return boxes.ToArray();
@@ -789,12 +788,12 @@ namespace Dicom.Printing
 
                         boxes.Add(
                             new RectF
-                                {
-                                    X = marginBounds.X + c * boxWidth,
-                                    Y = marginBounds.Y + r * boxHeight,
-                                    Width = boxWidth,
-                                    Height = boxHeight
-                                });
+                            {
+                                X = marginBounds.X + c * boxWidth,
+                                Y = marginBounds.Y + r * boxHeight,
+                                Width = boxWidth,
+                                Height = boxHeight
+                            });
                     }
                 }
 

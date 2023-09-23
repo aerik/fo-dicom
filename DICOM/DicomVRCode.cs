@@ -1,15 +1,13 @@
 ﻿// Copyright (c) 2012-2017 fo-dicom contributors.
 // Licensed under the Microsoft Public License (MS-PL).
 
-using System;
-
 namespace Dicom
 {
     /// <summary>Code String for DICOM Value Representation</summary>
     public static class DicomVRCode
     {
         public const string AE = "AE";
-                                                    
+
         /// <summary>Age String</summary>
         public const string AS = "AS";
 
@@ -54,6 +52,9 @@ namespace Dicom
         /// <summary>Other Long</summary>
         public const string OL = "OL";
 
+        /// <summary>Other Very Long</summary>
+        public const string OV = nameof(OV);
+
         /// <summary>Other Word</summary>
         public const string OW = "OW";
 
@@ -74,6 +75,9 @@ namespace Dicom
 
         /// <summary>Short Text</summary>
         public const string ST = "ST";
+
+        /// <summary>Signed Very Long</summary>
+        public const string SV = nameof(SV);
 
         /// <summary>Time</summary>
         public const string TM = "TM";
@@ -98,5 +102,8 @@ namespace Dicom
 
         /// <summary>Unlimited Text</summary>
         public const string UT = "UT";
+
+        /// <summary>Unsigned Very Long</summary>
+        public const string UV = nameof(UV);
     }
 }

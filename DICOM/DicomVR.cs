@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2012-2017 fo-dicom contributors.
+﻿// Copyright (c) 2012-2021 fo-dicom contributors.
 // Licensed under the Microsoft Public License (MS-PL).
 
 using System;
@@ -49,6 +49,17 @@ namespace Dicom
         /// <summary>Type used to represent VR value.</summary>
         public Type ValueType { get; private set; }
 
+        private Action<string> StringValidator { get; set; }
+
+        /// <summary> validates a string content. Throws Dicom
+        /// 
+        /// </summary>
+        /// <param name="content"></param>
+        public void ValidateString(string content)
+        {
+            StringValidator?.Invoke(content);
+        }
+
         /// <summary>
         /// Gets a string representation of this VR.
         /// </summary>
@@ -65,9 +76,8 @@ namespace Dicom
         /// <returns>VR</returns>
         public static DicomVR Parse(string vr)
         {
-            bool valid;
-            DicomVR result = TryParse(vr, out valid);
-            if (!valid) throw new DicomDataException(string.Format("Unknown VR: '{0}'", vr));
+            DicomVR result = TryParse(vr, out bool valid);
+            if (!valid) throw new DicomDataException($"Unknown VR: '{vr}'");
             return result;
         }
 
@@ -79,8 +89,7 @@ namespace Dicom
         /// <returns>true if VR was successfully parsed, false otherwise</returns>
         public static bool TryParse(string vr, out DicomVR result)
         {
-            bool valid;
-            result = TryParse(vr, out valid);
+            result = TryParse(vr, out bool valid);
             return valid;
         }
 
@@ -125,6 +134,8 @@ namespace Dicom
                     return DicomVR.OL;
                 case DicomVRCode.OW:
                     return DicomVR.OW;
+                case DicomVRCode.OV:
+                    return DicomVR.OV;
                 case DicomVRCode.PN:
                     return DicomVR.PN;
                 case DicomVRCode.SH:
@@ -137,6 +148,8 @@ namespace Dicom
                     return DicomVR.SS;
                 case DicomVRCode.ST:
                     return DicomVR.ST;
+                case DicomVRCode.SV:
+                    return DicomVR.SV;
                 case DicomVRCode.TM:
                     return DicomVR.TM;
                 case DicomVRCode.UC:
@@ -153,6 +166,8 @@ namespace Dicom
                     return DicomVR.US;
                 case DicomVRCode.UT:
                     return DicomVR.UT;
+                case DicomVRCode.UV:
+                    return DicomVR.UV;
                 default:
                     valid = false;
                     return DicomVR.NONE;
@@ -164,517 +179,579 @@ namespace Dicom
 
         /// <summary>No VR</summary>
         public static readonly DicomVR NONE = new DicomVR
-                                                  {
-                                                      Code = "NONE",
-                                                      Name = "No Value Representation",
-                                                      IsString = false,
-                                                      IsStringEncoded = false,
-                                                      Is16bitLength = false,
-                                                      IsMultiValue = false,
-                                                      PaddingValue = PadZero,
-                                                      MaximumLength = 0,
-                                                      UnitSize = 0,
-                                                      ByteSwap = 0,
-                                                      ValueType = typeof(object)
-                                                  };
+        {
+            Code = "NONE",
+            Name = "No Value Representation",
+            IsString = false,
+            IsStringEncoded = false,
+            Is16bitLength = false,
+            IsMultiValue = false,
+            PaddingValue = PadZero,
+            MaximumLength = 0,
+            UnitSize = 0,
+            ByteSwap = 0,
+            ValueType = typeof(object)
+        };
 
         /// <summary>Application Entity</summary>
         public static readonly DicomVR AE = new DicomVR
-                                                {
-                                                    Code = DicomVRCode.AE,
-                                                    Name = "Application Entity",
-                                                    IsString = true,
-                                                    IsStringEncoded = false,
-                                                    Is16bitLength = true,
-                                                    IsMultiValue = true,
-                                                    PaddingValue = PadSpace,
-                                                    MaximumLength = 16,
-                                                    UnitSize = 1,
-                                                    ByteSwap = 1,
-                                                    ValueType = typeof(string)
-                                                };
+        {
+            Code = DicomVRCode.AE,
+            Name = "Application Entity",
+            IsString = true,
+            IsStringEncoded = false,
+            Is16bitLength = true,
+            IsMultiValue = true,
+            PaddingValue = PadSpace,
+            MaximumLength = 16,
+            UnitSize = 1,
+            ByteSwap = 1,
+            ValueType = typeof(string),
+            StringValidator = DicomValidation.ValidateAE
+        };
 
         /// <summary>Age String</summary>
         public static readonly DicomVR AS = new DicomVR
-                                                {
-                                                    Code = DicomVRCode.AS,
-                                                    Name = "Age String",
-                                                    IsString = true,
-                                                    IsStringEncoded = false,
-                                                    Is16bitLength = true,
-                                                    IsMultiValue = true,
-                                                    PaddingValue = PadSpace,
-                                                    MaximumLength = 4,
-                                                    UnitSize = 1,
-                                                    ByteSwap = 1,
-                                                    ValueType = typeof(string)
-                                                };
+        {
+            Code = DicomVRCode.AS,
+            Name = "Age String",
+            IsString = true,
+            IsStringEncoded = false,
+            Is16bitLength = true,
+            IsMultiValue = true,
+            PaddingValue = PadSpace,
+            MaximumLength = 4,
+            UnitSize = 1,
+            ByteSwap = 1,
+            ValueType = typeof(string),
+            StringValidator = DicomValidation.ValidateAS
+        };
 
         /// <summary>Attribute Tag</summary>
         public static readonly DicomVR AT = new DicomVR
-                                                {
-                                                    Code = DicomVRCode.AT,
-                                                    Name = "Attribute Tag",
-                                                    IsString = false,
-                                                    IsStringEncoded = false,
-                                                    Is16bitLength = true,
-                                                    IsMultiValue = true,
-                                                    PaddingValue = PadZero,
-                                                    MaximumLength = 4,
-                                                    UnitSize = 4,
-                                                    ByteSwap = 2,
-                                                    ValueType = typeof(DicomTag)
-                                                };
+        {
+            Code = DicomVRCode.AT,
+            Name = "Attribute Tag",
+            IsString = false,
+            IsStringEncoded = false,
+            Is16bitLength = true,
+            IsMultiValue = true,
+            PaddingValue = PadZero,
+            MaximumLength = 4,
+            UnitSize = 4,
+            ByteSwap = 2,
+            ValueType = typeof(DicomTag)
+        };
 
         /// <summary>Code String</summary>
         public static readonly DicomVR CS = new DicomVR
-                                                {
-                                                    Code = DicomVRCode.CS,
-                                                    Name = "Code String",
-                                                    IsString = true,
-                                                    IsStringEncoded = false,
-                                                    Is16bitLength = true,
-                                                    IsMultiValue = true,
-                                                    PaddingValue = PadSpace,
-                                                    MaximumLength = 16,
-                                                    UnitSize = 1,
-                                                    ByteSwap = 1,
-                                                    ValueType = typeof(string)
-                                                };
+        {
+            Code = DicomVRCode.CS,
+            Name = "Code String",
+            IsString = true,
+            IsStringEncoded = false,
+            Is16bitLength = true,
+            IsMultiValue = true,
+            PaddingValue = PadSpace,
+            MaximumLength = 16,
+            UnitSize = 1,
+            ByteSwap = 1,
+            ValueType = typeof(string),
+            StringValidator = DicomValidation.ValidateCS
+        };
 
         /// <summary>Date</summary>
         public static readonly DicomVR DA = new DicomVR
-                                                {
-                                                    Code = DicomVRCode.DA,
-                                                    Name = "Date",
-                                                    IsString = true,
-                                                    IsStringEncoded = false,
-                                                    Is16bitLength = true,
-                                                    IsMultiValue = true,
-                                                    PaddingValue = PadSpace,
-                                                    MaximumLength = 8,
-                                                    UnitSize = 1,
-                                                    ByteSwap = 1,
-                                                    ValueType = typeof(DateTime)
-                                                };
+        {
+            Code = DicomVRCode.DA,
+            Name = "Date",
+            IsString = true,
+            IsStringEncoded = false,
+            Is16bitLength = true,
+            IsMultiValue = true,
+            PaddingValue = PadSpace,
+            MaximumLength = 18,
+            UnitSize = 1,
+            ByteSwap = 1,
+            ValueType = typeof(DateTime),
+            StringValidator = DicomValidation.ValidateDA
+        };
 
         /// <summary>Decimal String</summary>
         public static readonly DicomVR DS = new DicomVR
-                                                {
-                                                    Code = DicomVRCode.DS,
-                                                    Name = "Decimal String",
-                                                    IsString = true,
-                                                    IsStringEncoded = false,
-                                                    Is16bitLength = true,
-                                                    IsMultiValue = true,
-                                                    PaddingValue = PadSpace,
-                                                    MaximumLength = 16,
-                                                    UnitSize = 1,
-                                                    ByteSwap = 1,
-                                                    ValueType = typeof(decimal)
-                                                };
+        {
+            Code = DicomVRCode.DS,
+            Name = "Decimal String",
+            IsString = true,
+            IsStringEncoded = false,
+            Is16bitLength = true,
+            IsMultiValue = true,
+            PaddingValue = PadSpace,
+            MaximumLength = 16,
+            UnitSize = 1,
+            ByteSwap = 1,
+            ValueType = typeof(decimal),
+            StringValidator = DicomValidation.ValidateDS
+        };
 
         /// <summary>Date Time</summary>
         public static readonly DicomVR DT = new DicomVR
-                                                {
-                                                    Code = DicomVRCode.DT,
-                                                    Name = "Date Time",
-                                                    IsString = true,
-                                                    IsStringEncoded = false,
-                                                    Is16bitLength = true,
-                                                    IsMultiValue = true,
-                                                    PaddingValue = PadSpace,
-                                                    MaximumLength = 26,
-                                                    UnitSize = 1,
-                                                    ByteSwap = 1,
-                                                    ValueType = typeof(DateTime)
-                                                };
+        {
+            Code = DicomVRCode.DT,
+            Name = "Date Time",
+            IsString = true,
+            IsStringEncoded = false,
+            Is16bitLength = true,
+            IsMultiValue = true,
+            PaddingValue = PadSpace,
+            MaximumLength = 54,
+            UnitSize = 1,
+            ByteSwap = 1,
+            ValueType = typeof(DateTime),
+            StringValidator = DicomValidation.ValidateDT
+        };
 
         /// <summary>Floating Point Double</summary>
         public static readonly DicomVR FD = new DicomVR
-                                                {
-                                                    Code = DicomVRCode.FD,
-                                                    Name = "Floating Point Double",
-                                                    IsString = false,
-                                                    IsStringEncoded = false,
-                                                    Is16bitLength = true,
-                                                    IsMultiValue = true,
-                                                    PaddingValue = PadZero,
-                                                    MaximumLength = 8,
-                                                    UnitSize = 8,
-                                                    ByteSwap = 8,
-                                                    ValueType = typeof(double)
-                                                };
+        {
+            Code = DicomVRCode.FD,
+            Name = "Floating Point Double",
+            IsString = false,
+            IsStringEncoded = false,
+            Is16bitLength = true,
+            IsMultiValue = true,
+            PaddingValue = PadZero,
+            MaximumLength = 8,
+            UnitSize = 8,
+            ByteSwap = 8,
+            ValueType = typeof(double)
+        };
 
         /// <summary>Floating Point Single</summary>
         public static readonly DicomVR FL = new DicomVR
-                                                {
-                                                    Code = DicomVRCode.FL,
-                                                    Name = "Floating Point Single",
-                                                    IsString = false,
-                                                    IsStringEncoded = false,
-                                                    Is16bitLength = true,
-                                                    IsMultiValue = true,
-                                                    PaddingValue = PadZero,
-                                                    MaximumLength = 4,
-                                                    UnitSize = 4,
-                                                    ByteSwap = 4,
-                                                    ValueType = typeof(float)
-                                                };
+        {
+            Code = DicomVRCode.FL,
+            Name = "Floating Point Single",
+            IsString = false,
+            IsStringEncoded = false,
+            Is16bitLength = true,
+            IsMultiValue = true,
+            PaddingValue = PadZero,
+            MaximumLength = 4,
+            UnitSize = 4,
+            ByteSwap = 4,
+            ValueType = typeof(float)
+        };
 
         /// <summary>Integer String</summary>
         public static readonly DicomVR IS = new DicomVR
-                                                {
-                                                    Code = DicomVRCode.IS,
-                                                    Name = "Integer String",
-                                                    IsString = true,
-                                                    IsStringEncoded = false,
-                                                    Is16bitLength = true,
-                                                    IsMultiValue = true,
-                                                    PaddingValue = PadSpace,
-                                                    MaximumLength = 12,
-                                                    UnitSize = 1,
-                                                    ByteSwap = 1,
-                                                    ValueType = typeof(int)
-                                                };
+        {
+            Code = DicomVRCode.IS,
+            Name = "Integer String",
+            IsString = true,
+            IsStringEncoded = false,
+            Is16bitLength = true,
+            IsMultiValue = true,
+            PaddingValue = PadSpace,
+            MaximumLength = 12,
+            UnitSize = 1,
+            ByteSwap = 1,
+            ValueType = typeof(int),
+            StringValidator = DicomValidation.ValidateIS
+        };
 
         /// <summary>Long String</summary>
         public static readonly DicomVR LO = new DicomVR
-                                                {
-                                                    Code = DicomVRCode.LO,
-                                                    Name = "Long String",
-                                                    IsString = true,
-                                                    IsStringEncoded = true,
-                                                    Is16bitLength = true,
-                                                    //IsMultiValue = false,
-                                                    IsMultiValue = true,
-                                                    PaddingValue = PadSpace,
-                                                    MaximumLength = 64,
-                                                    UnitSize = 1,
-                                                    ByteSwap = 1,
-                                                    ValueType = typeof(string)
-                                                };
+        {
+            Code = DicomVRCode.LO,
+            Name = "Long String",
+            IsString = true,
+            IsStringEncoded = true,
+            Is16bitLength = true,
+            //IsMultiValue = false,
+            IsMultiValue = true,
+            PaddingValue = PadSpace,
+            MaximumLength = 64,
+            UnitSize = 1,
+            ByteSwap = 1,
+            ValueType = typeof(string),
+            StringValidator = DicomValidation.ValidateLO
+        };
 
         /// <summary>Long Text</summary>
         public static readonly DicomVR LT = new DicomVR
-                                                {
-                                                    Code = DicomVRCode.LT,
-                                                    Name = "Long Text",
-                                                    IsString = true,
-                                                    IsStringEncoded = true,
-                                                    Is16bitLength = true,
-                                                    IsMultiValue = false,
-                                                    PaddingValue = PadSpace,
-                                                    MaximumLength = 10240,
-                                                    UnitSize = 1,
-                                                    ByteSwap = 1,
-                                                    ValueType = typeof(string)
-                                                };
+        {
+            Code = DicomVRCode.LT,
+            Name = "Long Text",
+            IsString = true,
+            IsStringEncoded = true,
+            Is16bitLength = true,
+            IsMultiValue = false,
+            PaddingValue = PadSpace,
+            MaximumLength = 10240,
+            UnitSize = 1,
+            ByteSwap = 1,
+            ValueType = typeof(string),
+            StringValidator = DicomValidation.ValidateLT
+        };
 
         /// <summary>Other Byte</summary>
         public static readonly DicomVR OB = new DicomVR
-                                                {
-                                                    Code = DicomVRCode.OB,
-                                                    Name = "Other Byte",
-                                                    IsString = false,
-                                                    IsStringEncoded = false,
-                                                    Is16bitLength = false,
-                                                    IsMultiValue = true,
-                                                    PaddingValue = PadZero,
-                                                    MaximumLength = 0,
-                                                    UnitSize = 1,
-                                                    ByteSwap = 1,
-                                                    ValueType = typeof(byte[])
-                                                };
+        {
+            Code = DicomVRCode.OB,
+            Name = "Other Byte",
+            IsString = false,
+            IsStringEncoded = false,
+            Is16bitLength = false,
+            IsMultiValue = true,
+            PaddingValue = PadZero,
+            MaximumLength = 0,
+            UnitSize = 1,
+            ByteSwap = 1,
+            ValueType = typeof(byte[])
+        };
 
         /// <summary>Other Double</summary>
         public static readonly DicomVR OD = new DicomVR
-                                                {
-                                                    Code = DicomVRCode.OD,
-                                                    Name = "Other Double",
-                                                    IsString = false,
-                                                    IsStringEncoded = false,
-                                                    Is16bitLength = false,
-                                                    IsMultiValue = true,
-                                                    PaddingValue = PadZero,
-                                                    MaximumLength = 0,
-                                                    UnitSize = 8,
-                                                    ByteSwap = 8,
-                                                    ValueType = typeof(double[])
-                                                };
+        {
+            Code = DicomVRCode.OD,
+            Name = "Other Double",
+            IsString = false,
+            IsStringEncoded = false,
+            Is16bitLength = false,
+            IsMultiValue = true,
+            PaddingValue = PadZero,
+            MaximumLength = 0,
+            UnitSize = 8,
+            ByteSwap = 8,
+            ValueType = typeof(double[])
+        };
 
         /// <summary>Other Float</summary>
         public static readonly DicomVR OF = new DicomVR
-                                                {
-                                                    Code = DicomVRCode.OF,
-                                                    Name = "Other Float",
-                                                    IsString = false,
-                                                    IsStringEncoded = false,
-                                                    Is16bitLength = false,
-                                                    IsMultiValue = true,
-                                                    PaddingValue = PadZero,
-                                                    MaximumLength = 0,
-                                                    UnitSize = 4,
-                                                    ByteSwap = 4,
-                                                    ValueType = typeof(float[])
-                                                };
+        {
+            Code = DicomVRCode.OF,
+            Name = "Other Float",
+            IsString = false,
+            IsStringEncoded = false,
+            Is16bitLength = false,
+            IsMultiValue = true,
+            PaddingValue = PadZero,
+            MaximumLength = 0,
+            UnitSize = 4,
+            ByteSwap = 4,
+            ValueType = typeof(float[])
+        };
 
         /// <summary>Other Long</summary>
         public static readonly DicomVR OL = new DicomVR
-                                                {
-                                                    Code = DicomVRCode.OL,
-                                                    Name = "Other Long",
-                                                    IsString = false,
-                                                    IsStringEncoded = false,
-                                                    Is16bitLength = false,
-                                                    IsMultiValue = true,
-                                                    PaddingValue = PadZero,
-                                                    MaximumLength = 0,
-                                                    UnitSize = 4,
-                                                    ByteSwap = 4,
-                                                    ValueType = typeof(uint[])
-                                                };
+        {
+            Code = DicomVRCode.OL,
+            Name = "Other Long",
+            IsString = false,
+            IsStringEncoded = false,
+            Is16bitLength = false,
+            IsMultiValue = true,
+            PaddingValue = PadZero,
+            MaximumLength = 0,
+            UnitSize = 4,
+            ByteSwap = 4,
+            ValueType = typeof(uint[])
+        };
 
         /// <summary>Other Word</summary>
         public static readonly DicomVR OW = new DicomVR
-                                                {
-                                                    Code = DicomVRCode.OW,
-                                                    Name = "Other Word",
-                                                    IsString = false,
-                                                    IsStringEncoded = false,
-                                                    Is16bitLength = false,
-                                                    IsMultiValue = true,
-                                                    PaddingValue = PadZero,
-                                                    MaximumLength = 0,
-                                                    UnitSize = 2,
-                                                    ByteSwap = 2,
-                                                    ValueType = typeof(ushort[])
-                                                };
+        {
+            Code = DicomVRCode.OW,
+            Name = "Other Word",
+            IsString = false,
+            IsStringEncoded = false,
+            Is16bitLength = false,
+            IsMultiValue = true,
+            PaddingValue = PadZero,
+            MaximumLength = 0,
+            UnitSize = 2,
+            ByteSwap = 2,
+            ValueType = typeof(ushort[])
+        };
+
+        /// <summary>Other Very Long</summary>
+        public static readonly DicomVR OV = new DicomVR
+        {
+            Code = DicomVRCode.OV,
+            Name = "Other Very Long",
+            IsString = false,
+            IsStringEncoded = false,
+            Is16bitLength = false,
+            IsMultiValue = true,
+            PaddingValue = PadZero,
+            MaximumLength = 0,
+            UnitSize = 8,
+            ByteSwap = 8,
+            ValueType = typeof(ulong[])
+        };
 
         /// <summary>Person Name</summary>
         public static readonly DicomVR PN = new DicomVR
-                                                {
-                                                    Code = DicomVRCode.PN,
-                                                    Name = "Person Name",
-                                                    IsString = true,
-                                                    IsStringEncoded = true,
-                                                    Is16bitLength = true,
-                                                    //IsMultiValue = false,
-                                                    IsMultiValue = true,
-                                                    PaddingValue = PadSpace,
-                                                    MaximumLength = 64,
-                                                    UnitSize = 1,
-                                                    ByteSwap = 1,
-                                                    ValueType = typeof(String)
-                                                };
+        {
+            Code = DicomVRCode.PN,
+            Name = "Person Name",
+            IsString = true,
+            IsStringEncoded = true,
+            Is16bitLength = true,
+            //IsMultiValue = false,
+            IsMultiValue = true,
+            PaddingValue = PadSpace,
+            MaximumLength = 64,
+            UnitSize = 1,
+            ByteSwap = 1,
+            ValueType = typeof(String),
+            StringValidator = DicomValidation.ValidatePN
+        };
 
         /// <summary>Short String</summary>
         public static readonly DicomVR SH = new DicomVR
-                                                {
-                                                    Code = DicomVRCode.SH,
-                                                    Name = "Short String",
-                                                    IsString = true,
-                                                    IsStringEncoded = true,
-                                                    Is16bitLength = true,
-                                                    //IsMultiValue = false,
-                                                    IsMultiValue = true,
-                                                    PaddingValue = PadSpace,
-                                                    MaximumLength = 16,
-                                                    UnitSize = 1,
-                                                    ByteSwap = 1,
-                                                    ValueType = typeof(string)
-                                                };
+        {
+            Code = DicomVRCode.SH,
+            Name = "Short String",
+            IsString = true,
+            IsStringEncoded = true,
+            Is16bitLength = true,
+            //IsMultiValue = false,
+            IsMultiValue = true,
+            PaddingValue = PadSpace,
+            MaximumLength = 16,
+            UnitSize = 1,
+            ByteSwap = 1,
+            ValueType = typeof(string),
+            StringValidator = DicomValidation.ValidateSH
+        };
 
         /// <summary>Signed Long</summary>
         public static readonly DicomVR SL = new DicomVR
-                                                {
-                                                    Code = DicomVRCode.SL,
-                                                    Name = "Signed Long",
-                                                    IsString = false,
-                                                    IsStringEncoded = false,
-                                                    Is16bitLength = true,
-                                                    IsMultiValue = true,
-                                                    PaddingValue = PadZero,
-                                                    MaximumLength = 4,
-                                                    UnitSize = 4,
-                                                    ByteSwap = 4,
-                                                    ValueType = typeof(int)
-                                                };
+        {
+            Code = DicomVRCode.SL,
+            Name = "Signed Long",
+            IsString = false,
+            IsStringEncoded = false,
+            Is16bitLength = true,
+            IsMultiValue = true,
+            PaddingValue = PadZero,
+            MaximumLength = 4,
+            UnitSize = 4,
+            ByteSwap = 4,
+            ValueType = typeof(int)
+        };
 
         /// <summary>Sequence of Items</summary>
         public static readonly DicomVR SQ = new DicomVR
-                                                {
-                                                    Code = DicomVRCode.SQ,
-                                                    Name = "Sequence of Items",
-                                                    IsString = false,
-                                                    IsStringEncoded = false,
-                                                    Is16bitLength = false,
-                                                    IsMultiValue = false,
-                                                    PaddingValue = PadSpace,
-                                                    MaximumLength = 0,
-                                                    UnitSize = 0,
-                                                    ByteSwap = 0,
-                                                    //ValueType = typeof(IList<DicomDataset>)
-                                                };
+        {
+            Code = DicomVRCode.SQ,
+            Name = "Sequence of Items",
+            IsString = false,
+            IsStringEncoded = false,
+            Is16bitLength = false,
+            IsMultiValue = false,
+            PaddingValue = PadSpace,
+            MaximumLength = 0,
+            UnitSize = 0,
+            ByteSwap = 0,
+            //ValueType = typeof(IList<DicomDataset>)
+        };
 
         /// <summary>Signed Short</summary>
         public static readonly DicomVR SS = new DicomVR
-                                                {
-                                                    Code = DicomVRCode.SS,
-                                                    Name = "Signed Short",
-                                                    IsString = false,
-                                                    IsStringEncoded = false,
-                                                    Is16bitLength = true,
-                                                    IsMultiValue = true,
-                                                    PaddingValue = PadZero,
-                                                    MaximumLength = 2,
-                                                    UnitSize = 2,
-                                                    ByteSwap = 2,
-                                                    ValueType = typeof(short)
-                                                };
+        {
+            Code = DicomVRCode.SS,
+            Name = "Signed Short",
+            IsString = false,
+            IsStringEncoded = false,
+            Is16bitLength = true,
+            IsMultiValue = true,
+            PaddingValue = PadZero,
+            MaximumLength = 2,
+            UnitSize = 2,
+            ByteSwap = 2,
+            ValueType = typeof(short)
+        };
 
         /// <summary>Short Text</summary>
         public static readonly DicomVR ST = new DicomVR
-                                                {
-                                                    Code = DicomVRCode.ST,
-                                                    Name = "Short Text",
-                                                    IsString = true,
-                                                    IsStringEncoded = true,
-                                                    Is16bitLength = true,
-                                                    IsMultiValue = false,
-                                                    PaddingValue = PadSpace,
-                                                    MaximumLength = 1024,
-                                                    UnitSize = 1,
-                                                    ByteSwap = 1,
-                                                    ValueType = typeof(string)
-                                                };
+        {
+            Code = DicomVRCode.ST,
+            Name = "Short Text",
+            IsString = true,
+            IsStringEncoded = true,
+            Is16bitLength = true,
+            IsMultiValue = false,
+            PaddingValue = PadSpace,
+            MaximumLength = 1024,
+            UnitSize = 1,
+            ByteSwap = 1,
+            ValueType = typeof(string),
+            StringValidator = DicomValidation.ValidateST
+        };
+
+        /// <summary>Signed Very Long</summary>
+        public static readonly DicomVR SV = new DicomVR
+        {
+            Code = DicomVRCode.SV,
+            Name = "Signed Very Long",
+            IsString = false,
+            IsStringEncoded = false,
+            Is16bitLength = true,
+            IsMultiValue = true,
+            PaddingValue = PadZero,
+            MaximumLength = 8,
+            UnitSize = 8,
+            ByteSwap = 8,
+            ValueType = typeof(long)
+        };
 
         /// <summary>Time</summary>
         public static readonly DicomVR TM = new DicomVR
-                                                {
-                                                    Code = DicomVRCode.TM,
-                                                    Name = "Time",
-                                                    IsString = true,
-                                                    IsStringEncoded = false,
-                                                    Is16bitLength = true,
-                                                    IsMultiValue = true,
-                                                    PaddingValue = PadSpace,
-                                                    MaximumLength = 16,
-                                                    UnitSize = 1,
-                                                    ByteSwap = 1,
-                                                    ValueType = typeof(DateTime)
-                                                };
+        {
+            Code = DicomVRCode.TM,
+            Name = "Time",
+            IsString = true,
+            IsStringEncoded = false,
+            Is16bitLength = true,
+            IsMultiValue = true,
+            PaddingValue = PadSpace,
+            MaximumLength = 16,
+            UnitSize = 1,
+            ByteSwap = 1,
+            ValueType = typeof(DateTime),
+            StringValidator = DicomValidation.ValidateTM
+        };
 
         /// <summary>Unlimited Characters</summary>
         public static readonly DicomVR UC = new DicomVR
-                                                {
-                                                    Code = DicomVRCode.UC,
-                                                    Name = "Unlimited Characters",
-                                                    IsString = true,
-                                                    IsStringEncoded = true,
-                                                    Is16bitLength = false,
-                                                    IsMultiValue = true,
-                                                    PaddingValue = PadSpace,
-                                                    MaximumLength = 0,
-                                                    UnitSize = 1,
-                                                    ByteSwap = 1,
-                                                    ValueType = typeof(string)
-                                                };
+        {
+            Code = DicomVRCode.UC,
+            Name = "Unlimited Characters",
+            IsString = true,
+            IsStringEncoded = true,
+            Is16bitLength = false,
+            IsMultiValue = true,
+            PaddingValue = PadSpace,
+            MaximumLength = 0,
+            UnitSize = 1,
+            ByteSwap = 1,
+            ValueType = typeof(string)
+        };
 
         /// <summary>Unique Identifier</summary>
         public static readonly DicomVR UI = new DicomVR
-                                                {
-                                                    Code = DicomVRCode.UI,
-                                                    Name = "Unique Identifier",
-                                                    IsString = true,
-                                                    IsStringEncoded = false,
-                                                    Is16bitLength = true,
-                                                    IsMultiValue = true,
-                                                    PaddingValue = PadZero,
-                                                    MaximumLength = 64,
-                                                    UnitSize = 1,
-                                                    ByteSwap = 1,
-                                                    ValueType = typeof(string)
-                                                };
+        {
+            Code = DicomVRCode.UI,
+            Name = "Unique Identifier",
+            IsString = true,
+            IsStringEncoded = false,
+            Is16bitLength = true,
+            IsMultiValue = true,
+            PaddingValue = PadZero,
+            MaximumLength = 64,
+            UnitSize = 1,
+            ByteSwap = 1,
+            ValueType = typeof(string),
+            StringValidator = DicomValidation.ValidateUI
+        };
 
         /// <summary>Unsigned Long</summary>
         public static readonly DicomVR UL = new DicomVR
-                                                {
-                                                    Code = DicomVRCode.UL,
-                                                    Name = "Unsigned Long",
-                                                    IsString = false,
-                                                    IsStringEncoded = false,
-                                                    Is16bitLength = true,
-                                                    IsMultiValue = true,
-                                                    PaddingValue = PadZero,
-                                                    MaximumLength = 4,
-                                                    UnitSize = 4,
-                                                    ByteSwap = 4,
-                                                    ValueType = typeof(uint)
-                                                };
+        {
+            Code = DicomVRCode.UL,
+            Name = "Unsigned Long",
+            IsString = false,
+            IsStringEncoded = false,
+            Is16bitLength = true,
+            IsMultiValue = true,
+            PaddingValue = PadZero,
+            MaximumLength = 4,
+            UnitSize = 4,
+            ByteSwap = 4,
+            ValueType = typeof(uint)
+        };
 
         /// <summary>Unknown</summary>
         public static readonly DicomVR UN = new DicomVR
-                                                {
-                                                    Code = DicomVRCode.UN,
-                                                    Name = "Unknown",
-                                                    IsString = false,
-                                                    IsStringEncoded = false,
-                                                    Is16bitLength = false,
-                                                    IsMultiValue = true,
-                                                    PaddingValue = PadZero,
-                                                    MaximumLength = 0,
-                                                    UnitSize = 1,
-                                                    ByteSwap = 1,
-                                                    ValueType = typeof(byte[])
-                                                };
+        {
+            Code = DicomVRCode.UN,
+            Name = "Unknown",
+            IsString = false,
+            IsStringEncoded = false,
+            Is16bitLength = false,
+            IsMultiValue = true,
+            PaddingValue = PadZero,
+            MaximumLength = 0,
+            UnitSize = 1,
+            ByteSwap = 1,
+            ValueType = typeof(byte[])
+        };
 
         /// <summary>Universal Resource Identifier or Universal Resource Locator (URI/URL)</summary>
         public static readonly DicomVR UR = new DicomVR
-                                                {
-                                                    Code = DicomVRCode.UR,
-                                                    Name = "Universal Resource Identifier or Locator",
-                                                    IsString = true,
-                                                    IsStringEncoded = true,
-                                                    Is16bitLength = false,
-                                                    IsMultiValue = false,
-                                                    PaddingValue = PadSpace,
-                                                    MaximumLength = 0,
-                                                    UnitSize = 1,
-                                                    ByteSwap = 1,
-                                                    ValueType = typeof(string)
-                                                };
+        {
+            Code = DicomVRCode.UR,
+            Name = "Universal Resource Identifier or Locator",
+            IsString = true,
+            IsStringEncoded = true,
+            Is16bitLength = false,
+            IsMultiValue = false,
+            PaddingValue = PadSpace,
+            MaximumLength = 0,
+            UnitSize = 1,
+            ByteSwap = 1,
+            ValueType = typeof(string)
+        };
 
         /// <summary>Unsigned Short</summary>
         public static readonly DicomVR US = new DicomVR
-                                                {
-                                                    Code = DicomVRCode.US,
-                                                    Name = "Unsigned Short",
-                                                    IsString = false,
-                                                    IsStringEncoded = false,
-                                                    Is16bitLength = true,
-                                                    IsMultiValue = true,
-                                                    PaddingValue = PadZero,
-                                                    MaximumLength = 2,
-                                                    UnitSize = 2,
-                                                    ByteSwap = 2,
-                                                    ValueType = typeof(ushort)
-                                                };
+        {
+            Code = DicomVRCode.US,
+            Name = "Unsigned Short",
+            IsString = false,
+            IsStringEncoded = false,
+            Is16bitLength = true,
+            IsMultiValue = true,
+            PaddingValue = PadZero,
+            MaximumLength = 2,
+            UnitSize = 2,
+            ByteSwap = 2,
+            ValueType = typeof(ushort)
+        };
 
         /// <summary>Unlimited Text</summary>
         public static readonly DicomVR UT = new DicomVR
-                                                {
-                                                    Code = DicomVRCode.UT,
-                                                    Name = "Unlimited Text",
-                                                    IsString = true,
-                                                    IsStringEncoded = true,
-                                                    Is16bitLength = false,
-                                                    IsMultiValue = false,
-                                                    PaddingValue = PadSpace,
-                                                    MaximumLength = 0,
-                                                    UnitSize = 1,
-                                                    ByteSwap = 1,
-                                                    ValueType = typeof(string)
-                                                };
+        {
+            Code = DicomVRCode.UT,
+            Name = "Unlimited Text",
+            IsString = true,
+            IsStringEncoded = true,
+            Is16bitLength = false,
+            IsMultiValue = false,
+            PaddingValue = PadSpace,
+            MaximumLength = 0,
+            UnitSize = 1,
+            ByteSwap = 1,
+            ValueType = typeof(string)
+        };
+
+        /// <summary>Unsigned Very Long</summary>
+        public static readonly DicomVR UV = new DicomVR
+        {
+            Code = DicomVRCode.UV,
+            Name = "Unsigned Very Long",
+            IsString = false,
+            IsStringEncoded = false,
+            Is16bitLength = true,
+            IsMultiValue = true,
+            PaddingValue = PadZero,
+            MaximumLength = 8,
+            UnitSize = 8,
+            ByteSwap = 8,
+            ValueType = typeof(ulong)
+        };
     }
 }

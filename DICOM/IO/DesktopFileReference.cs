@@ -21,6 +21,15 @@ namespace Dicom.IO
         /// <param name="fileName">File name.</param>
         public DesktopFileReference(string fileName)
         {
+            if (File.Exists(fileName))
+            {
+                FileInfo dfi = new FileInfo(fileName);
+                //maximimum size of byte array is 2147483647 - need to make checks for files larger than this
+                if (dfi.Length >= uint.MaxValue)
+                {
+                    throw new DicomIoException("Files larger than 2GB are not currently supported");
+                }
+            }
             this.Name = fileName;
             this.IsTempFile = false;
         }
@@ -31,7 +40,7 @@ namespace Dicom.IO
         ~DesktopFileReference()
         {
             bool hasOpenStream = false;
-            for(int i= 0; i<streamList.Count; i++)
+            for (int i = 0; i < streamList.Count; i++)
             {
                 var stream = streamList[i];
                 if (!stream.IsDisposed)
@@ -233,8 +242,10 @@ namespace Dicom.IO
 
             public override long Length => innerStream.Length;
 
-            public override long Position {
-                get {
+            public override long Position
+            {
+                get
+                {
                     return innerStream.Position;
                 }
                 set

@@ -1,13 +1,12 @@
 ﻿// Copyright (c) 2012-2017 fo-dicom contributors.
 // Licensed under the Microsoft Public License (MS-PL).
 
+using Dicom.Imaging.Mathematics;
+using Dicom.IO.Buffer;
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
-
-using Dicom.Imaging.Mathematics;
-using Dicom.IO.Buffer;
 
 namespace Dicom.Imaging
 {

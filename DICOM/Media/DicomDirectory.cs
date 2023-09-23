@@ -8,9 +8,9 @@ namespace Dicom.Media
     using System.Linq;
     using System.Text;
 
-    #if !NET35
+#if !NET35
     using System.Threading.Tasks;
-    #endif
+#endif
 
     using Dicom.IO;
     using Dicom.IO.Reader;

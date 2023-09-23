@@ -96,7 +96,7 @@ namespace Dicom.Network
         /// <param name="transferSyntaxes">The list of proposed transfer syntaxes</param>
         public void CreatePresentationContext(params DicomTransferSyntax[] transferSyntaxes)
         {
-            if(transferSyntaxes.Length == 0)
+            if (transferSyntaxes.Length == 0)
             {
                 throw new ArgumentException("Proposed Transfer Syntaxes array can't be empty");
             }

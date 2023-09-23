@@ -3,10 +3,9 @@
 
 namespace Dicom
 {
+    using Dicom.IO;
     using System;
     using System.Text;
-
-    using Dicom.IO;
 
     /// <summary>
     /// Support methods for DICOM encoding.

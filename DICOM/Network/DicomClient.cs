@@ -3,6 +3,7 @@
 
 namespace Dicom.Network
 {
+    using Dicom.Log;
     using System;
     using System.Collections.Generic;
     using System.Linq;
@@ -10,12 +11,10 @@ namespace Dicom.Network
     using System.Threading;
     using System.Threading.Tasks;
 
-    using Dicom.Log;
-
     /// <summary>
     /// General client class for DICOM services.
     /// </summary>
-    public class DicomClient:IDisposable
+    public class DicomClient : IDisposable
     {
         #region FIELDS
 
@@ -197,7 +196,7 @@ namespace Dicom.Network
         /// <param name="useTls">True if TLS security should be enabled, false otherwise.</param>
         /// <param name="callingAe">Calling Application Entity Title.</param>
         /// <param name="calledAe">Called Application Entity Title.</param>
-        public void Send(string host, int port, bool useTls, string callingAe, string calledAe, string certificateName=null)
+        public void Send(string host, int port, bool useTls, string callingAe, string calledAe, string certificateName = null)
         {
             if (!CanSend) return;
 
@@ -231,7 +230,7 @@ namespace Dicom.Network
         /// <param name="callingAe">Calling Application Entity Title.</param>
         /// <param name="calledAe">Called Application Entity Title.</param>
         /// <returns>Awaitable task.</returns>
-        public Task SendAsync(string host, int port, bool useTls, string callingAe, string calledAe, string certificateName=null)
+        public Task SendAsync(string host, int port, bool useTls, string callingAe, string calledAe, string certificateName = null)
         {
             return SendAsync(host, port, useTls, callingAe, calledAe, CancellationToken.None, certificateName);
         }
@@ -263,7 +262,7 @@ namespace Dicom.Network
             return DoSendAsync(this.networkStream, assoc, cancelTok);
         }
 
-        public INetworkStream GetNetworkStream(string host, int port, bool useTls, string certificateName=null)
+        public INetworkStream GetNetworkStream(string host, int port, bool useTls, string certificateName = null)
         {
             var noDelay = Options?.TcpNoDelay ?? DicomServiceOptions.Default.TcpNoDelay;
             var ignoreSslPolicyErrors = Options?.IgnoreSslPolicyErrors
@@ -366,8 +365,8 @@ namespace Dicom.Network
             }
             catch
             {
-            return false;
-        }
+                return false;
+            }
         }
 
         /// <summary>
@@ -799,7 +798,7 @@ namespace Dicom.Network
                         return true;
                     }
                 }
-                catch (TaskCanceledException e)
+                catch (TaskCanceledException)
                 {
                     return false;
                 }

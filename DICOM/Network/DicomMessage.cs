@@ -3,9 +3,8 @@
 
 namespace Dicom.Network
 {
-    using System.Text;
-
     using Dicom.Log;
+    using System.Text;
 
     /// <summary>
     /// Base class for DIMSE-C and DIMSE-N message items.
@@ -68,8 +67,8 @@ namespace Dicom.Network
                     case DicomCommandField.NDeleteRequest:
                         //possibly deal with broken MPPS
                         DicomUID nSopClass = null;
-                        nSopClass = Command.Get<DicomUID>(DicomTag.RequestedSOPClassUID,null);
-                        if(nSopClass == null) nSopClass = Command.Get<DicomUID>(DicomTag.AffectedSOPClassUID, null);
+                        nSopClass = Command.Get<DicomUID>(DicomTag.RequestedSOPClassUID, null);
+                        if (nSopClass == null) nSopClass = Command.Get<DicomUID>(DicomTag.AffectedSOPClassUID, null);
                         return nSopClass;
                     case DicomCommandField.CStoreRequest:
                     case DicomCommandField.CFindRequest:
@@ -177,7 +176,7 @@ namespace Dicom.Network
             catch (System.Exception x)
             {
                 output.AppendLine("--------------------------------------------------------------------------------");
-                output.AppendLine(" *** Error dumping command or dataset: " +x.Message + " ***");
+                output.AppendLine(" *** Error dumping command or dataset: " + x.Message + " ***");
                 output.AppendLine("--------------------------------------------------------------------------------");
             }
             return output.ToString();

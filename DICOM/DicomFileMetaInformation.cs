@@ -43,7 +43,7 @@ namespace Dicom
             if (aet != null) this.SourceApplicationEntityTitle = aet;
 
             if (dataset.Contains(DicomTag.SendingApplicationEntityTitle))
-                SendingApplicationEntityTitle = dataset.Get<string>(DicomTag.SendingApplicationEntityTitle,0,"");
+                SendingApplicationEntityTitle = dataset.Get<string>(DicomTag.SendingApplicationEntityTitle, 0, "");
             if (dataset.Contains(DicomTag.ReceivingApplicationEntityTitle))
                 ReceivingApplicationEntityTitle = dataset.Get<string>(DicomTag.ReceivingApplicationEntityTitle, 0, "");
             if (dataset.Contains(DicomTag.PrivateInformationCreatorUID))

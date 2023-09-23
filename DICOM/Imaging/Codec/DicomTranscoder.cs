@@ -3,12 +3,11 @@
 
 namespace Dicom.Imaging.Codec
 {
-    using System;
-    using System.Collections.Generic;
-
     using Dicom.Imaging.Render;
     using Dicom.IO.Buffer;
     using Dicom.IO.Writer;
+    using System;
+    using System.Collections.Generic;
 
     /// <summary>
     /// Generic DICOM transcoder.
@@ -122,7 +121,7 @@ namespace Dicom.Imaging.Codec
                         var frame = oldPixelData.GetFrame(i);
                         newPixelData.AddFrame(frame);
                     }
-                    catch (IndexOutOfRangeException iorx)
+                    catch (IndexOutOfRangeException)
                     {
                         newPixelData.AddFrame(new EmptyBuffer());
                     }
@@ -191,7 +190,8 @@ namespace Dicom.Imaging.Codec
                                 }
                             }
                         }
-                    }catch(Exception x) { }
+                    }
+                    catch { }
                 }
             }
             //do NOT call temp.Close here - other buffers may be shared by other datasets
@@ -215,7 +215,7 @@ namespace Dicom.Imaging.Codec
                     var buffer = pixelData.GetFrame(frame);
                     return buffer;
                 }
-                catch (IndexOutOfRangeException iorx)
+                catch (IndexOutOfRangeException)
                 {
                     return new EmptyBuffer();
                 }
@@ -238,7 +238,7 @@ namespace Dicom.Imaging.Codec
                     var buffer = pixelData.GetFrame(frame);
                     return buffer;
                 }
-                catch (IndexOutOfRangeException iorx)
+                catch (IndexOutOfRangeException)
                 {
                     return new EmptyBuffer();
                 }
@@ -261,7 +261,7 @@ namespace Dicom.Imaging.Codec
                 return PixelDataFactory.Create(DicomPixelData.Create(dataset), frame);
             }
             DicomPixelData newPixelData = DecodePixels(dataset, frame);
-            return PixelDataFactory.Create(newPixelData,0);//zero because there is only one frame
+            return PixelDataFactory.Create(newPixelData, 0);//zero because there is only one frame
         }
 
         /// <summary>
@@ -280,7 +280,7 @@ namespace Dicom.Imaging.Codec
             {
                 buffer = pixelData.GetFrame(frame);
             }
-            catch (IndexOutOfRangeException iorx)
+            catch (IndexOutOfRangeException)
             {
                 buffer = new EmptyBuffer();
             }
@@ -293,7 +293,13 @@ namespace Dicom.Imaging.Codec
                 var cloneDataset = oldDataset.Clone();
                 var oldPixelData = DicomPixelData.Create(cloneDataset, true);
                 oldPixelData.AddFrame(buffer);
-                InputCodec.Decode(oldPixelData, pixelData, InputCodecParams);
+                IDicomCodec codec = InputCodec;
+                // :-( check for 12 bit images with wrong transfer syntax; moved to codecs static method
+                //if (oldPixelData.BitDepth.BitsStored > 8 && InputSyntax == DicomTransferSyntax.JPEGProcess1)
+                //{
+                //    codec = TranscoderManager.GetCodec(DicomTransferSyntax.JPEGProcess2_4);
+                //}
+                codec.Decode(oldPixelData, pixelData, InputCodecParams);
             }
             else
             {
@@ -303,7 +309,7 @@ namespace Dicom.Imaging.Codec
             if ((InputSyntax == DicomTransferSyntax.JPEGProcess1
                  || InputSyntax == DicomTransferSyntax.JPEGProcess2_4) && pixelData.SamplesPerPixel == 3)
             {
-                if(InputCodecParams != null && InputCodecParams is DicomJpegParams &&((DicomJpegParams)InputCodecParams).ConvertColorspaceToRGB)
+                if (InputCodecParams != null && InputCodecParams is DicomJpegParams && ((DicomJpegParams)InputCodecParams).ConvertColorspaceToRGB)
                     // When converting to RGB in Dicom.Imaging.Codec.Jpeg.i, PlanarConfiguration is set to Interleaved
                     pixelData.PhotometricInterpretation = PhotometricInterpretation.Rgb;
                 pixelData.PlanarConfiguration = PlanarConfiguration.Interleaved;
@@ -344,10 +350,10 @@ namespace Dicom.Imaging.Codec
             IByteBuffer buffer = null;
             try
             {
-                if(pixelData.BitsAllocated == 1)
+                if (pixelData.BitsAllocated == 1)
                 {
                     var pixels = PixelDataFactory.Create(pixelData, frame);
-                    if(pixels is GrayscalePixelDataU8) //should always be
+                    if (pixels is GrayscalePixelDataU8) //should always be
                     {
                         var gr8 = (GrayscalePixelDataU8)pixels;
                         buffer = new MemoryByteBuffer(gr8.Data);
@@ -358,7 +364,7 @@ namespace Dicom.Imaging.Codec
                     buffer = pixelData.GetFrame(frame);
                 }
             }
-            catch (IndexOutOfRangeException iorx)
+            catch (IndexOutOfRangeException)
             {
                 buffer = new EmptyBuffer();
             }
@@ -370,7 +376,7 @@ namespace Dicom.Imaging.Codec
                 // clone dataset to prevent changes to source
                 var cloneDataset = dataset.Clone();
                 var oldPixelData = DicomPixelData.Create(cloneDataset, true);
-                if(oldPixelData.BitsAllocated == 1)
+                if (oldPixelData.BitsAllocated == 1)
                 {
                     oldPixelData.BitsAllocated = 8;
                     oldPixelData.BitsStored = 8;
@@ -379,7 +385,7 @@ namespace Dicom.Imaging.Codec
                     newPixelData.BitsStored = 8;
                     newPixelData.HighBit = 7;
                     double oldWidth = newDataset.Get<double>(DicomTag.WindowWidth, 0, 0.0);
-                    if(oldWidth == 0.0)
+                    if (oldWidth == 0.0)
                     {
                         newDataset.AddOrUpdate(DicomTag.WindowWidth, (decimal)2);
                     }
@@ -442,7 +448,7 @@ namespace Dicom.Imaging.Codec
                         }
                     }
                 }
-                catch (Exception x)
+                catch (Exception)
                 {
                     throw;
                 }

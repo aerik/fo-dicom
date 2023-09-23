@@ -3,10 +3,9 @@
 
 namespace Dicom.Printing
 {
-    using System.IO;
-
     using Dicom.IO;
     using Dicom.Log;
+    using System.IO;
 
     /// <summary>
     /// Color or gray scale basic image box

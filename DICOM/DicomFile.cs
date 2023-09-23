@@ -519,7 +519,7 @@ namespace Dicom
             var test1 = FileMetaInfo.ImplementationClassUID;
             var test2 = FileMetaInfo.InternalTransferSyntax;
             var test3 = FileMetaInfo.MediaStorageSOPInstanceUID;
-            
+
             if (!this.Dataset.Contains(DicomTag.SOPInstanceUID))
             {
                 throw new DicomFileException(this, "Unable to save file with no SOPInstanceUID");
@@ -557,9 +557,9 @@ namespace Dicom
             }
             //make sure there are no duplicates between Dataset and FileMetaInfo
             List<DicomTag> toDelete = new List<DicomTag>();
-            foreach(DicomItem item in this.Dataset)
+            foreach (DicomItem item in this.Dataset)
             {
-                if(item.Tag.CompareTo(FileMetaInfoStopTag) < 0)
+                if (item.Tag.CompareTo(FileMetaInfoStopTag) < 0)
                 {
                     //use the dataset value if it's not empty
                     if (!String.IsNullOrEmpty(this.Dataset.Get<string>(item.Tag, -1, null)))
@@ -573,7 +573,7 @@ namespace Dicom
                     break;
                 }
             }
-            foreach(DicomTag tag in toDelete)
+            foreach (DicomTag tag in toDelete)
             {
                 this.Dataset.Remove(tag);
             }

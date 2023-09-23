@@ -1,13 +1,11 @@
 ﻿// Copyright (c) 2012-2017 fo-dicom contributors.
 // Licensed under the Microsoft Public License (MS-PL).
 
+using Dicom.IO;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Text;
-
-using Dicom.IO;
 
 namespace Dicom.Network
 {
@@ -150,7 +148,7 @@ namespace Dicom.Network
         /// <summary>
         /// Reset PDU read stream
         /// </summary>
-        public void Reset(long offset=0)
+        public void Reset(long offset = 0)
         {
             _ms.Seek(offset, SeekOrigin.Begin);
         }
@@ -605,7 +603,7 @@ namespace Dicom.Network
                             il -= (ushort)(4 + pl);
                         }
                     }
-                    catch(DicomException dx)
+                    catch (DicomException)
                     {
                         var pc = new DicomPresentationContext(id, DicomUID.Parse("error"));
                         _assoc.PresentationContexts.Add(pc);

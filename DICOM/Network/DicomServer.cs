@@ -3,14 +3,13 @@
 
 namespace Dicom.Network
 {
+    using Dicom.Log;
     using System;
     using System.Collections.Generic;
     using System.Linq;
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
-
-    using Dicom.Log;
 
     /// <summary>
     /// Representation of a DICOM server.
@@ -243,7 +242,7 @@ namespace Dicom.Network
             }
             finally
             {
-                if(listener != null)
+                if (listener != null)
                 {
                     listener.Stop();
                 }
@@ -266,7 +265,7 @@ namespace Dicom.Network
                         for (int i = clients.Count - 1; i >= 0; i--)
                         {
                             var curClient = this.clients[i];
-                            if(curClient == null)
+                            if (curClient == null)
                             {
                                 this.clients.RemoveAt(i);
                             }

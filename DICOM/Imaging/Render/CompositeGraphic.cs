@@ -3,10 +3,9 @@
 
 namespace Dicom.Imaging.Render
 {
+    using Dicom.Imaging.LUT;
     using System.Collections.Generic;
     using System.Linq;
-
-    using Dicom.Imaging.LUT;
 
     /// <summary>
     /// The Composite Graphic implementation of <seealso cref="IGraphic"/> which layers graphics one over the other
@@ -137,7 +136,7 @@ namespace Dicom.Imaging.Render
         {
             _layers.Add(layer);
             _layers.Sort(
-                delegate(IGraphic a, IGraphic b)
+                delegate (IGraphic a, IGraphic b)
                     {
                         if (b.ZOrder > a.ZOrder) return 1;
                         else if (a.ZOrder > b.ZOrder) return -1;

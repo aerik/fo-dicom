@@ -267,7 +267,7 @@ namespace Dicom.IO
             {
                 if (Endian.Little == endian)
                 {
-                    return new BinaryReader(input,DicomEncoding.Default);
+                    return new BinaryReader(input, DicomEncoding.Default);
                 }
                 else
                 {

@@ -58,7 +58,7 @@ namespace Dicom.IO.Buffer
 
         public byte[] GetByteRange(int offset, int count)
         {
-            if(offset < 0 || count < 0)
+            if (offset < 0 || count < 0)
             {
                 throw new ArgumentOutOfRangeException("Offset and count cannot be less than zero");
             }

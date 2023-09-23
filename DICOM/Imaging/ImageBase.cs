@@ -3,18 +3,17 @@
 
 namespace Dicom.Imaging
 {
+    using Dicom.Imaging.Render;
+    using Dicom.IO;
     using System;
     using System.Collections.Generic;
     using System.Reflection;
-
-    using Dicom.Imaging.Render;
-    using Dicom.IO;
 
     /// <summary>
     /// Base class for image implementations.
     /// </summary>
     /// <typeparam name="TImage">Image implementation type.</typeparam>
-    public abstract class ImageBase<TImage> : IImage where TImage : class 
+    public abstract class ImageBase<TImage> : IImage where TImage : class
     {
         #region FIELDS
 
@@ -48,14 +47,14 @@ namespace Dicom.Imaging
             this.disposed = false;
         }
 
-		/// <summary>
-		/// Destructor to free up the image resources.
-		/// </summary>
-		~ImageBase()
-		{
-			this.Dispose(false);
-		}
-		
+        /// <summary>
+        /// Destructor to free up the image resources.
+        /// </summary>
+        ~ImageBase()
+        {
+            this.Dispose(false);
+        }
+
         #endregion
 
         #region PROPERTIES

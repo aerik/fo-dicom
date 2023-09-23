@@ -3,9 +3,8 @@
 
 namespace Dicom.Imaging
 {
-    using System;
-
     using Dicom.IO;
+    using System;
 
     /// <summary>
     /// Base class for image implementations where underlying image type is disposable.
@@ -27,13 +26,13 @@ namespace Dicom.Imaging
         {
         }
 
-		/// <summary>
-		/// Destructor to free up the image resources.
-		/// </summary>
-		~ImageDisposableBase()
-		{
-			this.Dispose(false);
-		}
+        /// <summary>
+        /// Destructor to free up the image resources.
+        /// </summary>
+        ~ImageDisposableBase()
+        {
+            this.Dispose(false);
+        }
 
         #endregion
 

@@ -3,10 +3,9 @@
 
 namespace Dicom.Imaging
 {
-    using System.Linq;
-
     using Dicom.Imaging.Codec;
     using Dicom.Imaging.Render;
+    using System.Linq;
 
     /// <summary>
     /// DICOM Image class for image rendering.

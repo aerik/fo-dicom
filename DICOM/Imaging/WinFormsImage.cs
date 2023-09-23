@@ -3,12 +3,11 @@
 
 namespace Dicom.Imaging
 {
+    using Dicom.Imaging.Render;
+    using Dicom.IO;
     using System.Collections.Generic;
     using System.Drawing;
     using System.Drawing.Imaging;
-
-    using Dicom.Imaging.Render;
-    using Dicom.IO;
 
     /// <summary>
     /// Convenience class for non-generic access to <see cref="WinFormsImage"/> image objects.

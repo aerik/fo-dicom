@@ -3,11 +3,10 @@
 
 namespace Dicom.Printing
 {
-    using System;
-    using System.Drawing;
-
     using Dicom.Imaging;
     using Dicom.Imaging.Mathematics;
+    using System;
+    using System.Drawing;
 
     /// <summary>
     /// Extension methods to support <see cref="ImageBox"/> class.

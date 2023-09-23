@@ -538,7 +538,7 @@ namespace Dicom.StructuredReport
             {
                 s += String.Format(" [{0}]", Get<string>());
             }
-            catch(Exception x)
+            catch (Exception)
             {
                 //s += x.Message;
             }

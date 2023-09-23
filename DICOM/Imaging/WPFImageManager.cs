@@ -3,8 +3,6 @@
 
 namespace Dicom.Imaging
 {
-    using Dicom.IO;
-
     /// <summary>
     /// WPF based implementation of the <see cref="ImageManager"/>.
     /// </summary>

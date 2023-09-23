@@ -40,7 +40,7 @@ namespace Dicom.Network
         /// </summary>
         /// <param name="id">Presentation context ID.</param>
         /// <returns>Presentation context associated with <paramref name="id"/></returns>
-        public DicomPresentationContext this[byte id] =>_pc[id];
+        public DicomPresentationContext this[byte id] => _pc[id];
 
         #endregion
 
@@ -105,7 +105,7 @@ namespace Dicom.Network
             if (request is DicomCStoreRequest)
             {
                 var cstore = request as DicomCStoreRequest;
-                DicomPresentationContext pc = UpdateExistingPresentationContext(cstore);                
+                DicomPresentationContext pc = UpdateExistingPresentationContext(cstore);
                 if (pc == null)
                 {
                     bool canTranscode = (!cstore.TransferSyntax.IsEncapsulated) || TranscoderManager.HasCodec(cstore.TransferSyntax);
@@ -213,7 +213,7 @@ namespace Dicom.Network
                             bool tsOkay = (!dp.IsEncapsulated) || TranscoderManager.HasCodec(dp);
                             //assumes each transferSyntax in diff is unique
                             if (tsOkay && !pctx.Contains(dp)) pc.AddTransferSyntax(dp);
-                        }                        
+                        }
                         break;
                     }
                 }

@@ -50,6 +50,7 @@
     </Compile>
     <Compile Include="$(MSBuildThisFileDirectory)DicomUIDGenerator.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)DicomUIDPrivate.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DicomValidation.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)DicomVM.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)DicomVR.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)DicomVRCode.cs" />

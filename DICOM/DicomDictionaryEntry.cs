@@ -3,8 +3,6 @@
 
 namespace Dicom
 {
-    using System;
-
     public sealed class DicomDictionaryEntry
     {
         public DicomDictionaryEntry(

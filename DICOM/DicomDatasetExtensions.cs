@@ -65,6 +65,28 @@ namespace Dicom
             return dataset.Where(x => x.Tag.Group == group && x.Tag.Element != 0x0000);
         }
 
+        /// <summary>
+        /// Turns off validation on the passed DicomDataset and returns this Dataset
+        /// </summary>
+        /// <param name="dataset"></param>
+        /// <returns></returns>
+        public static DicomDataset NotValidated(this DicomDataset dataset)
+        {
+            dataset.ValidateItems = false;
+            return dataset;
+        }
+
+        /// <summary>
+        /// Turns on validation on the passed DicomDataset and returns this Dataset
+        /// </summary>
+        /// <param name="dataset"></param>
+        /// <returns></returns>
+        public static DicomDataset Validated(this DicomDataset dataset)
+        {
+            dataset.ValidateItems = true;
+            return dataset;
+        }
+
         public static IList<IByteBuffer> GetContainedBuffers(this DicomDataset dataset)
         {
             List<IByteBuffer> buffers = new List<IByteBuffer>();
@@ -86,7 +108,7 @@ namespace Dicom
                 else if (item is DicomFragmentSequence)
                 {
                     DicomFragmentSequence dfs = item as DicomFragmentSequence;
-                    foreach(var buf in dfs.Fragments)
+                    foreach (var buf in dfs.Fragments)
                     {
                         buffers.AddRange(GetRootBuffers(buf));
                     }
@@ -98,15 +120,15 @@ namespace Dicom
         public static IByteBuffer[] GetRootBuffers(IByteBuffer curBuffer)
         {
             List<IByteBuffer> buffers = new List<IByteBuffer>();
-            if(curBuffer is CompositeByteBuffer)
+            if (curBuffer is CompositeByteBuffer)
             {
                 CompositeByteBuffer cbuf = (CompositeByteBuffer)curBuffer;
-                foreach(var buf in cbuf.Buffers)
+                foreach (var buf in cbuf.Buffers)
                 {
                     buffers.AddRange(GetRootBuffers(buf));
                 }
             }
-            else if(curBuffer is RangeByteBuffer)
+            else if (curBuffer is RangeByteBuffer)
             {
                 buffers.AddRange(GetRootBuffers(((RangeByteBuffer)curBuffer).Internal));
             }

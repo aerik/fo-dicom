@@ -3,10 +3,9 @@
 
 namespace Dicom.Imaging
 {
-    using System.Drawing;
-
     using Dicom.Imaging.Mathematics;
     using Dicom.IO.Buffer;
+    using System.Drawing;
 
     /// <summary>
     /// Bitmap related factory methods for <see cref="DicomOverlayData"/>.
@@ -28,15 +27,15 @@ namespace Dicom.Imaging
             while (ds.Contains(new DicomTag(group, DicomTag.OverlayBitPosition.Element))) group += 2;
 
             var overlay = new DicomOverlayData(ds, group)
-                              {
-                                  Type = DicomOverlayType.Graphics,
-                                  Rows = bitmap.Height,
-                                  Columns = bitmap.Width,
-                                  OriginX = 1,
-                                  OriginY = 1,
-                                  BitsAllocated = 1,
-                                  BitPosition = 1
-                              };
+            {
+                Type = DicomOverlayType.Graphics,
+                Rows = bitmap.Height,
+                Columns = bitmap.Width,
+                OriginX = 1,
+                OriginY = 1,
+                BitsAllocated = 1,
+                BitPosition = 1
+            };
 
             var array = new BitList { Capacity = overlay.Rows * overlay.Columns };
 

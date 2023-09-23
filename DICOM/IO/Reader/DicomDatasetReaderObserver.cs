@@ -1,11 +1,10 @@
 ﻿// Copyright (c) 2012-2017 fo-dicom contributors.
 // Licensed under the Microsoft Public License (MS-PL).
 
+using Dicom.IO.Buffer;
 using System;
 using System.Collections.Generic;
 using System.Text;
-
-using Dicom.IO.Buffer;
 
 namespace Dicom.IO.Reader
 {
@@ -135,7 +134,7 @@ namespace Dicom.IO.Reader
                     element = new DicomUnlimitedText(tag, _encodings.Peek(), data);
                     break;
                 default:
-                    throw new DicomDataException("Unhandled VR in DICOM parser observer: {0} with tag {1} having size {2}",  vr.Code, tag, data.Size );
+                    throw new DicomDataException("Unhandled VR in DICOM parser observer: {0} with tag {1} having size {2}", vr.Code, tag, data.Size);
             }
 
             if (element.Tag == DicomTag.SpecificCharacterSet)

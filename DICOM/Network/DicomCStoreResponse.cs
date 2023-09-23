@@ -28,7 +28,7 @@ namespace Dicom.Network
         public DicomCStoreResponse(DicomCStoreRequest request, DicomStatus status)
             : base(request, status)
         {
-            if(request != null)
+            if (request != null)
             {
                 Command.AddOrUpdate(DicomTag.AffectedSOPInstanceUID, request.SOPInstanceUID);
             }

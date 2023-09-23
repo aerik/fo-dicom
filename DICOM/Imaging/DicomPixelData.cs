@@ -1,10 +1,9 @@
 ﻿// Copyright (c) 2012-2017 fo-dicom contributors.
 // Licensed under the Microsoft Public License (MS-PL).
 
+using Dicom.IO.Buffer;
 using System;
 using System.Linq;
-
-using Dicom.IO.Buffer;
 
 namespace Dicom.Imaging
 {
@@ -241,7 +240,8 @@ namespace Dicom.Imaging
         public int BytesAllocated
         {
             get
-            {   if (_BytesAllocated < 0)
+            {
+                if (_BytesAllocated < 0)
                 {
                     int bytes = BitsAllocated / 8;
                     if ((BitsAllocated % 8) > 0) bytes++;
@@ -403,7 +403,7 @@ namespace Dicom.Imaging
                 {
                     if (numFrames > 1)
                     {
-                        string sop = dataset.Get<string>(DicomTag.SOPInstanceUID,0,"unknown");
+                        string sop = dataset.Get<string>(DicomTag.SOPInstanceUID, 0, "unknown");
                         Log.LogManager.GetLogger("DicomPixelData").Error("Broken pixel data compression detected in " + sop);
                         return false; //can't fix
                     }
@@ -568,7 +568,7 @@ namespace Dicom.Imaging
                     numFrames = (uint)Element.OffsetTable.Count;
                     if (frame >= numFrames)
                     {
-                        throw new IndexOutOfRangeException("Requested frame offset ("+frame+") out of range ("+ numFrames + ") !");
+                        throw new IndexOutOfRangeException("Requested frame offset (" + frame + ") out of range (" + numFrames + ") !");
                     }
                     else
                     {
@@ -613,10 +613,10 @@ namespace Dicom.Imaging
 
                             if (pos < stop && stop != uint.MaxValue)
                             {
-                                string dets = "Frame: " + frame + "/"+numFrames + "/"+Element.Fragments.Count + " pos: " + pos + " stop: " + stop;
+                                string dets = "Frame: " + frame + "/" + numFrames + "/" + Element.Fragments.Count + " pos: " + pos + " stop: " + stop;
 
                                 throw new DicomImagingException(
-                                    "Image frame truncated while reading fragments from offset table.",new Exception(dets));
+                                    "Image frame truncated while reading fragments from offset table.", new Exception(dets));
                             }
                             buffer = composite;
                         }

@@ -1,10 +1,9 @@
 ﻿// Copyright (c) 2012-2017 fo-dicom contributors.
 // Licensed under the Microsoft Public License (MS-PL).
 
-using System.IO;
-
 using Dicom.IO;
 using Dicom.IO.Buffer;
+using System.IO;
 
 namespace Dicom.Imaging.Codec
 {

@@ -1,9 +1,9 @@
 ﻿// Copyright (c) 2012-2021 fo-dicom contributors.
 // Licensed under the Microsoft Public License (MS-PL).
 
+using Dicom.IO;
 using System;
 using System.Linq;
-using Dicom.IO;
 
 namespace Dicom.Imaging.LUT
 {

@@ -1,10 +1,9 @@
 ﻿// Copyright (c) 2012-2017 fo-dicom contributors.
 // Licensed under the Microsoft Public License (MS-PL).
 
+using Dicom.IO;
 using System;
 using System.Collections.Generic;
-
-using Dicom.IO;
 
 namespace Dicom
 {
@@ -66,8 +65,8 @@ namespace Dicom
 
         /// <summary>Virtual transfer syntax for reading datasets improperly encoded in Big Endian format with implicit VR.</summary>
         public static DicomTransferSyntax ImplicitVRBigEndian = new DicomTransferSyntax
-                                                                    {
-                                                                        UID =
+        {
+            UID =
                                                                             new DicomUID(
                                                                             DicomUID
                                                                                 .ExplicitVRBigEndianRETIRED
@@ -75,388 +74,388 @@ namespace Dicom
                                                                             "Implicit VR Big Endian",
                                                                             DicomUidType
                                                                             .TransferSyntax),
-                                                                        IsExplicitVR = false,
-                                                                        Endian = Endian.Big
-                                                                    };
+            IsExplicitVR = false,
+            Endian = Endian.Big
+        };
 
         /// <summary>GE Private Implicit VR Big Endian</summary>
         /// <remarks>Same as Implicit VR Little Endian except for big endian pixel data.</remarks>
         public static DicomTransferSyntax GEPrivateImplicitVRBigEndian = new DicomTransferSyntax
-                                                                             {
-                                                                                 UID =
+        {
+            UID =
                                                                                      DicomUID
                                                                                          .GEPrivateImplicitVRBigEndian,
-                                                                                 IsExplicitVR =
+            IsExplicitVR =
                                                                                      false,
-                                                                                 Endian =
+            Endian =
                                                                                      Endian.Little,
-                                                                                 SwapPixelData =
+            SwapPixelData =
                                                                                      true
-                                                                             };
+        };
 
         /// <summary>Implicit VR Little Endian</summary>
         public static DicomTransferSyntax ImplicitVRLittleEndian = new DicomTransferSyntax
-                                                                       {
-                                                                           UID =
+        {
+            UID =
                                                                                DicomUID
                                                                                .ImplicitVRLittleEndian,
-                                                                           Endian = Endian.Little
-                                                                       };
+            Endian = Endian.Little
+        };
 
         /// <summary>Explicit VR Little Endian</summary>
         public static DicomTransferSyntax ExplicitVRLittleEndian = new DicomTransferSyntax
-                                                                       {
-                                                                           UID =
+        {
+            UID =
                                                                                DicomUID
                                                                                .ExplicitVRLittleEndian,
-                                                                           IsExplicitVR = true,
-                                                                           Endian = Endian.Little
-                                                                       };
+            IsExplicitVR = true,
+            Endian = Endian.Little
+        };
 
         /// <summary>Explicit VR Big Endian</summary>
         public static DicomTransferSyntax ExplicitVRBigEndian = new DicomTransferSyntax
-                                                                    {
-                                                                        UID =
+        {
+            UID =
                                                                             DicomUID
                                                                             .ExplicitVRBigEndianRETIRED,
-                                                                        IsExplicitVR = true,
-                                                                        Endian = Endian.Big
-                                                                    };
+            IsExplicitVR = true,
+            Endian = Endian.Big
+        };
 
         /// <summary>Deflated Explicit VR Little Endian</summary>
         public static DicomTransferSyntax DeflatedExplicitVRLittleEndian = new DicomTransferSyntax
-                                                                               {
-                                                                                   UID =
+        {
+            UID =
                                                                                        DicomUID
                                                                                        .DeflatedExplicitVRLittleEndian,
-                                                                                   IsExplicitVR =
+            IsExplicitVR =
                                                                                        true,
-                                                                                   IsDeflate = true,
-                                                                                   Endian =
+            IsDeflate = true,
+            Endian =
                                                                                        Endian.Little
-                                                                               };
+        };
 
         /// <summary>JPEG Baseline (Process 1): Default Transfer Syntax for Lossy JPEG 8 Bit Image Compression</summary>
         public static DicomTransferSyntax JPEGProcess1 = new DicomTransferSyntax
-                                                             {
-                                                                 UID = DicomUID.JPEGBaseline1,
-                                                                 IsExplicitVR = true,
-                                                                 IsEncapsulated = true,
-                                                                 IsLossy = true,
-                                                                 LossyCompressionMethod =
+        {
+            UID = DicomUID.JPEGBaseline1,
+            IsExplicitVR = true,
+            IsEncapsulated = true,
+            IsLossy = true,
+            LossyCompressionMethod =
                                                                      "ISO_10918_1",
-                                                                 Endian = Endian.Little
-                                                             };
+            Endian = Endian.Little
+        };
 
         /// <summary>JPEG Extended (Process 2 &amp; 4): Default Transfer Syntax for Lossy JPEG 12 Bit Image Compression (Process 4 only)</summary>
         public static DicomTransferSyntax JPEGProcess2_4 = new DicomTransferSyntax
-                                                               {
-                                                                   UID = DicomUID.JPEGExtended24,
-                                                                   IsExplicitVR = true,
-                                                                   IsEncapsulated = true,
-                                                                   IsLossy = true,
-                                                                   LossyCompressionMethod =
+        {
+            UID = DicomUID.JPEGExtended24,
+            IsExplicitVR = true,
+            IsEncapsulated = true,
+            IsLossy = true,
+            LossyCompressionMethod =
                                                                        "ISO_10918_1",
-                                                                   Endian = Endian.Little
-                                                               };
+            Endian = Endian.Little
+        };
 
         /// <summary>JPEG Extended (Process 3 &amp; 5) (Retired)</summary>
         public static DicomTransferSyntax JPEGProcess3_5Retired = new DicomTransferSyntax
-                                                                      {
-                                                                          UID =
+        {
+            UID =
                                                                               DicomUID
                                                                               .JPEGExtended35RETIRED,
-                                                                          IsRetired = true,
-                                                                          IsExplicitVR = true,
-                                                                          IsEncapsulated = true,
-                                                                          IsLossy = true,
-                                                                          LossyCompressionMethod =
+            IsRetired = true,
+            IsExplicitVR = true,
+            IsEncapsulated = true,
+            IsLossy = true,
+            LossyCompressionMethod =
                                                                               "ISO_10918_1",
-                                                                          Endian = Endian.Little
-                                                                      };
+            Endian = Endian.Little
+        };
 
         /// <summary>JPEG Spectral Selection, Non-Hierarchical (Process 6 &amp; 8) (Retired)</summary>
         public static DicomTransferSyntax JPEGProcess6_8Retired = new DicomTransferSyntax
-                                                                      {
-                                                                          UID =
+        {
+            UID =
                                                                               DicomUID
                                                                               .JPEGSpectralSelectionNonHierarchical68RETIRED,
-                                                                          IsRetired = true,
-                                                                          IsExplicitVR = true,
-                                                                          IsEncapsulated = true,
-                                                                          IsLossy = true,
-                                                                          LossyCompressionMethod =
+            IsRetired = true,
+            IsExplicitVR = true,
+            IsEncapsulated = true,
+            IsLossy = true,
+            LossyCompressionMethod =
                                                                               "ISO_10918_1",
-                                                                          Endian = Endian.Little
-                                                                      };
+            Endian = Endian.Little
+        };
 
         /// <summary>JPEG Spectral Selection, Non-Hierarchical (Process 7 &amp; 9) (Retired)</summary>
         public static DicomTransferSyntax JPEGProcess7_9Retired = new DicomTransferSyntax
-                                                                      {
-                                                                          UID =
+        {
+            UID =
                                                                               DicomUID
                                                                               .JPEGSpectralSelectionNonHierarchical79RETIRED,
-                                                                          IsRetired = true,
-                                                                          IsExplicitVR = true,
-                                                                          IsEncapsulated = true,
-                                                                          IsLossy = true,
-                                                                          LossyCompressionMethod =
+            IsRetired = true,
+            IsExplicitVR = true,
+            IsEncapsulated = true,
+            IsLossy = true,
+            LossyCompressionMethod =
                                                                               "ISO_10918_1",
-                                                                          Endian = Endian.Little
-                                                                      };
+            Endian = Endian.Little
+        };
 
         /// <summary>JPEG Full Progression, Non-Hierarchical (Process 10 &amp; 12) (Retired)</summary>
         public static DicomTransferSyntax JPEGProcess10_12Retired = new DicomTransferSyntax
-                                                                        {
-                                                                            UID =
+        {
+            UID =
                                                                                 DicomUID
                                                                                 .JPEGFullProgressionNonHierarchical1012RETIRED,
-                                                                            IsRetired = true,
-                                                                            IsExplicitVR = true,
-                                                                            IsEncapsulated = true,
-                                                                            IsLossy = true,
-                                                                            LossyCompressionMethod =
+            IsRetired = true,
+            IsExplicitVR = true,
+            IsEncapsulated = true,
+            IsLossy = true,
+            LossyCompressionMethod =
                                                                                 "ISO_10918_1",
-                                                                            Endian = Endian.Little
-                                                                        };
+            Endian = Endian.Little
+        };
 
         /// <summary>JPEG Full Progression, Non-Hierarchical (Process 11 &amp; 13) (Retired)</summary>
         public static DicomTransferSyntax JPEGProcess11_13Retired = new DicomTransferSyntax
-                                                                        {
-                                                                            UID =
+        {
+            UID =
                                                                                 DicomUID
                                                                                 .JPEGFullProgressionNonHierarchical1113RETIRED,
-                                                                            IsRetired = true,
-                                                                            IsExplicitVR = true,
-                                                                            IsEncapsulated = true,
-                                                                            IsLossy = true,
-                                                                            LossyCompressionMethod =
+            IsRetired = true,
+            IsExplicitVR = true,
+            IsEncapsulated = true,
+            IsLossy = true,
+            LossyCompressionMethod =
                                                                                 "ISO_10918_1",
-                                                                            Endian = Endian.Little
-                                                                        };
+            Endian = Endian.Little
+        };
 
         /// <summary>JPEG Lossless, Non-Hierarchical (Process 14)</summary>
         public static DicomTransferSyntax JPEGProcess14 = new DicomTransferSyntax
-                                                              {
-                                                                  UID =
+        {
+            UID =
                                                                       DicomUID
                                                                       .JPEGLosslessNonHierarchical14,
-                                                                  IsExplicitVR = true,
-                                                                  IsEncapsulated = true,
-                                                                  Endian = Endian.Little
-                                                              };
+            IsExplicitVR = true,
+            IsEncapsulated = true,
+            Endian = Endian.Little
+        };
 
         /// <summary>JPEG Lossless, Non-Hierarchical (Process 15) (Retired)</summary>
         public static DicomTransferSyntax JPEGProcess15Retired = new DicomTransferSyntax
-                                                                     {
-                                                                         UID =
+        {
+            UID =
                                                                              DicomUID
                                                                              .JPEGLosslessNonHierarchical15RETIRED,
-                                                                         IsRetired = true,
-                                                                         IsExplicitVR = true,
-                                                                         IsEncapsulated = true,
-                                                                         Endian = Endian.Little
-                                                                     };
+            IsRetired = true,
+            IsExplicitVR = true,
+            IsEncapsulated = true,
+            Endian = Endian.Little
+        };
 
         /// <summary>JPEG Extended, Hierarchical (Process 16 &amp; 18) (Retired)</summary>
         public static DicomTransferSyntax JPEGProcess16_18Retired = new DicomTransferSyntax
-                                                                        {
-                                                                            UID =
+        {
+            UID =
                                                                                 DicomUID
                                                                                 .JPEGExtendedHierarchical1618RETIRED,
-                                                                            IsRetired = true,
-                                                                            IsExplicitVR = true,
-                                                                            IsEncapsulated = true,
-                                                                            IsLossy = true,
-                                                                            LossyCompressionMethod =
+            IsRetired = true,
+            IsExplicitVR = true,
+            IsEncapsulated = true,
+            IsLossy = true,
+            LossyCompressionMethod =
                                                                                 "ISO_10918_1",
-                                                                            Endian = Endian.Little
-                                                                        };
+            Endian = Endian.Little
+        };
 
         /// <summary>JPEG Extended, Hierarchical (Process 17 &amp; 19) (Retired)</summary>
         public static DicomTransferSyntax JPEGProcess17_19Retired = new DicomTransferSyntax
-                                                                        {
-                                                                            UID =
+        {
+            UID =
                                                                                 DicomUID
                                                                                 .JPEGExtendedHierarchical1719RETIRED,
-                                                                            IsRetired = true,
-                                                                            IsExplicitVR = true,
-                                                                            IsEncapsulated = true,
-                                                                            IsLossy = true,
-                                                                            LossyCompressionMethod =
+            IsRetired = true,
+            IsExplicitVR = true,
+            IsEncapsulated = true,
+            IsLossy = true,
+            LossyCompressionMethod =
                                                                                 "ISO_10918_1",
-                                                                            Endian = Endian.Little
-                                                                        };
+            Endian = Endian.Little
+        };
 
         /// <summary>JPEG Spectral Selection, Hierarchical (Process 20 &amp; 22) (Retired)</summary>
         public static DicomTransferSyntax JPEGProcess20_22Retired = new DicomTransferSyntax
-                                                                        {
-                                                                            UID =
+        {
+            UID =
                                                                                 DicomUID
                                                                                 .JPEGSpectralSelectionHierarchical2022RETIRED,
-                                                                            IsRetired = true,
-                                                                            IsExplicitVR = true,
-                                                                            IsEncapsulated = true,
-                                                                            IsLossy = true,
-                                                                            LossyCompressionMethod =
+            IsRetired = true,
+            IsExplicitVR = true,
+            IsEncapsulated = true,
+            IsLossy = true,
+            LossyCompressionMethod =
                                                                                 "ISO_10918_1",
-                                                                            Endian = Endian.Little
-                                                                        };
+            Endian = Endian.Little
+        };
 
         /// <summary>JPEG Spectral Selection, Hierarchical (Process 21 &amp; 23) (Retired)</summary>
         public static DicomTransferSyntax JPEGProcess21_23Retired = new DicomTransferSyntax
-                                                                        {
-                                                                            UID =
+        {
+            UID =
                                                                                 DicomUID
                                                                                 .JPEGSpectralSelectionHierarchical2123RETIRED,
-                                                                            IsRetired = true,
-                                                                            IsExplicitVR = true,
-                                                                            IsEncapsulated = true,
-                                                                            IsLossy = true,
-                                                                            LossyCompressionMethod =
+            IsRetired = true,
+            IsExplicitVR = true,
+            IsEncapsulated = true,
+            IsLossy = true,
+            LossyCompressionMethod =
                                                                                 "ISO_10918_1",
-                                                                            Endian = Endian.Little
-                                                                        };
+            Endian = Endian.Little
+        };
 
         /// <summary>JPEG Full Progression, Hierarchical (Process 24 &amp; 26) (Retired)</summary>
         public static DicomTransferSyntax JPEGProcess24_26Retired = new DicomTransferSyntax
-                                                                        {
-                                                                            UID =
+        {
+            UID =
                                                                                 DicomUID
                                                                                 .JPEGFullProgressionHierarchical2426RETIRED,
-                                                                            IsRetired = true,
-                                                                            IsExplicitVR = true,
-                                                                            IsEncapsulated = true,
-                                                                            IsLossy = true,
-                                                                            LossyCompressionMethod =
+            IsRetired = true,
+            IsExplicitVR = true,
+            IsEncapsulated = true,
+            IsLossy = true,
+            LossyCompressionMethod =
                                                                                 "ISO_10918_1",
-                                                                            Endian = Endian.Little
-                                                                        };
+            Endian = Endian.Little
+        };
 
         /// <summary>JPEG Full Progression, Hierarchical (Process 25 &amp; 27) (Retired)</summary>
         public static DicomTransferSyntax JPEGProcess25_27Retired = new DicomTransferSyntax
-                                                                        {
-                                                                            UID =
+        {
+            UID =
                                                                                 DicomUID
                                                                                 .JPEGFullProgressionHierarchical2527RETIRED,
-                                                                            IsRetired = true,
-                                                                            IsExplicitVR = true,
-                                                                            IsEncapsulated = true,
-                                                                            IsLossy = true,
-                                                                            LossyCompressionMethod =
+            IsRetired = true,
+            IsExplicitVR = true,
+            IsEncapsulated = true,
+            IsLossy = true,
+            LossyCompressionMethod =
                                                                                 "ISO_10918_1",
-                                                                            Endian = Endian.Little
-                                                                        };
+            Endian = Endian.Little
+        };
 
         /// <summary>JPEG Lossless, Hierarchical (Process 28) (Retired)</summary>
         public static DicomTransferSyntax JPEGProcess28Retired = new DicomTransferSyntax
-                                                                     {
-                                                                         UID =
+        {
+            UID =
                                                                              DicomUID
                                                                              .JPEGLosslessHierarchical28RETIRED,
-                                                                         IsRetired = true,
-                                                                         IsExplicitVR = true,
-                                                                         IsEncapsulated = true,
-                                                                         Endian = Endian.Little
-                                                                     };
+            IsRetired = true,
+            IsExplicitVR = true,
+            IsEncapsulated = true,
+            Endian = Endian.Little
+        };
 
         /// <summary>JPEG Lossless, Hierarchical (Process 29) (Retired)</summary>
         public static DicomTransferSyntax JPEGProcess29Retired = new DicomTransferSyntax
-                                                                     {
-                                                                         UID =
+        {
+            UID =
                                                                              DicomUID
                                                                              .JPEGLosslessHierarchical29RETIRED,
-                                                                         IsRetired = true,
-                                                                         IsExplicitVR = true,
-                                                                         IsEncapsulated = true,
-                                                                         Endian = Endian.Little
-                                                                     };
+            IsRetired = true,
+            IsExplicitVR = true,
+            IsEncapsulated = true,
+            Endian = Endian.Little
+        };
 
         /// <summary>JPEG Lossless, Non-Hierarchical, First-Order Prediction (Process 14 [Selection Value 1]): Default Transfer Syntax for Lossless JPEG Image Compression</summary>
         public static DicomTransferSyntax JPEGProcess14SV1 = new DicomTransferSyntax
-                                                                 {
-                                                                     UID = DicomUID.JPEGLossless,
-                                                                     IsExplicitVR = true,
-                                                                     IsEncapsulated = true,
-                                                                     Endian = Endian.Little
-                                                                 };
+        {
+            UID = DicomUID.JPEGLossless,
+            IsExplicitVR = true,
+            IsEncapsulated = true,
+            Endian = Endian.Little
+        };
 
         /// <summary>JPEG-LS Lossless Image Compression</summary>
         public static DicomTransferSyntax JPEGLSLossless = new DicomTransferSyntax
-                                                               {
-                                                                   UID = DicomUID.JPEGLSLossless,
-                                                                   IsExplicitVR = true,
-                                                                   IsEncapsulated = true,
-                                                                   Endian = Endian.Little
-                                                               };
+        {
+            UID = DicomUID.JPEGLSLossless,
+            IsExplicitVR = true,
+            IsEncapsulated = true,
+            Endian = Endian.Little
+        };
 
         /// <summary>JPEG-LS Lossy (Near-Lossless) Image Compression</summary>
         public static DicomTransferSyntax JPEGLSNearLossless = new DicomTransferSyntax
-                                                                   {
-                                                                       UID =
+        {
+            UID =
                                                                            DicomUID
                                                                            .JPEGLSLossyNearLossless,
-                                                                       IsExplicitVR = true,
-                                                                       IsEncapsulated = true,
-                                                                       IsLossy = true,
-                                                                       LossyCompressionMethod =
+            IsExplicitVR = true,
+            IsEncapsulated = true,
+            IsLossy = true,
+            LossyCompressionMethod =
                                                                            "ISO_14495_1",
-                                                                       Endian = Endian.Little
-                                                                   };
+            Endian = Endian.Little
+        };
 
         /// <summary>JPEG 2000 Lossless Image Compression</summary>
         public static DicomTransferSyntax JPEG2000Lossless = new DicomTransferSyntax
-                                                                 {
-                                                                     UID =
+        {
+            UID =
                                                                          DicomUID
                                                                          .JPEG2000LosslessOnly,
-                                                                     IsExplicitVR = true,
-                                                                     IsEncapsulated = true,
-                                                                     Endian = Endian.Little
-                                                                 };
+            IsExplicitVR = true,
+            IsEncapsulated = true,
+            Endian = Endian.Little
+        };
 
         /// <summary>JPEG 2000 Lossy Image Compression</summary>
         public static DicomTransferSyntax JPEG2000Lossy = new DicomTransferSyntax
-                                                              {
-                                                                  UID = DicomUID.JPEG2000,
-                                                                  IsExplicitVR = true,
-                                                                  IsEncapsulated = true,
-                                                                  IsLossy = true,
-                                                                  LossyCompressionMethod =
+        {
+            UID = DicomUID.JPEG2000,
+            IsExplicitVR = true,
+            IsEncapsulated = true,
+            IsLossy = true,
+            LossyCompressionMethod =
                                                                       "ISO_15444_1",
-                                                                  Endian = Endian.Little
-                                                              };
+            Endian = Endian.Little
+        };
 
         /// <summary>MPEG2 Main Profile @ Main Level</summary>
         public static DicomTransferSyntax MPEG2 = new DicomTransferSyntax
-                                                      {
-                                                          UID = DicomUID.MPEG2,
-                                                          IsExplicitVR = true,
-                                                          IsEncapsulated = true,
-                                                          IsLossy = true,
-                                                          LossyCompressionMethod = "ISO_13818_2",
-                                                          Endian = Endian.Little
-                                                      };
+        {
+            UID = DicomUID.MPEG2,
+            IsExplicitVR = true,
+            IsEncapsulated = true,
+            IsLossy = true,
+            LossyCompressionMethod = "ISO_13818_2",
+            Endian = Endian.Little
+        };
 
         /// <summary>Transfer Syntax: MPEG-4 AVC/H.264 High Profile / Level 4.1</summary>
         public static DicomTransferSyntax MP4HighProfileLevel41 = new DicomTransferSyntax
-                                                    {
-                                                        UID = DicomUID.MPEG4AVCH264HighProfileLevel41,
-                                                        IsExplicitVR = true,
-                                                        IsEncapsulated = true,
-                                                        IsLossy = true,
-                                                        LossyCompressionMethod = "unknown",
-                                                        Endian = Endian.Little
-                                                    };
+        {
+            UID = DicomUID.MPEG4AVCH264HighProfileLevel41,
+            IsExplicitVR = true,
+            IsEncapsulated = true,
+            IsLossy = true,
+            LossyCompressionMethod = "unknown",
+            Endian = Endian.Little
+        };
 
         /// <summary>RLE Lossless</summary>
         public static DicomTransferSyntax RLELossless = new DicomTransferSyntax
-                                                            {
-                                                                UID = DicomUID.RLELossless,
-                                                                IsExplicitVR = true,
-                                                                IsEncapsulated = true,
-                                                                Endian = Endian.Little
-                                                            };
+        {
+            UID = DicomUID.RLELossless,
+            IsExplicitVR = true,
+            IsEncapsulated = true,
+            Endian = Endian.Little
+        };
 
         #endregion
 
@@ -516,12 +515,12 @@ namespace Dicom
             DicomTransferSyntax tx;
             if (Entries.TryGetValue(uid, out tx)) return tx;
             return new DicomTransferSyntax
-                       {
-                           UID = uid,
-                           IsExplicitVR = true,
-                           IsEncapsulated = true,
-                           Endian = Endian.Little
-                       };
+            {
+                UID = uid,
+                IsExplicitVR = true,
+                IsEncapsulated = true,
+                Endian = Endian.Little
+            };
             //throw new DicomDataException("Unknown transfer syntax UID: {0}", uid);
         }
 

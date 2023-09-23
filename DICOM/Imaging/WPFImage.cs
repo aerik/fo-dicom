@@ -3,14 +3,13 @@
 
 namespace Dicom.Imaging
 {
+    using Dicom.Imaging.Render;
+    using Dicom.IO;
     using System.Collections.Generic;
     using System.Runtime.InteropServices;
     using System.Windows;
     using System.Windows.Media;
     using System.Windows.Media.Imaging;
-
-    using Dicom.Imaging.Render;
-    using Dicom.IO;
 
     /// <summary>
     /// Convenience class for non-generic access to <see cref="WPFImage"/> image objects.
