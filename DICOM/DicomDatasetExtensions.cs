@@ -87,6 +87,70 @@ namespace Dicom
             return dataset;
         }
 
+        /// <summary>
+        /// throws exception containing all invalid tags
+        /// </summary>
+        public static bool Validate(this DicomDataset dds)
+        {
+            string result = "";
+            int errCount = 0;
+            int indentSize = 4;
+            DicomDictionary dict = DicomDictionary.Default;
+            foreach (var item in dds)
+            {
+                if (item.Tag != null)
+                {
+                    if (item is DicomSequence)
+                    {
+                        DicomSequence seq = (DicomSequence)item;
+                        if (seq.Items.Count > 0)
+                        {
+                            foreach (DicomDataset sdat in seq.Items)
+                            {
+                                try
+                                {
+                                    sdat.Validate();
+                                }
+                                catch (DicomValidationException sdvx)
+                                {
+                                    string sErrs = sdvx.Message;
+                                    errCount += sErrs.Split('\n').Length;
+                                    if (result.Length > 0) result += "\n";
+                                    result += sdvx.Message;
+                                }
+                            }
+                        }
+                    }
+                    else
+                    {
+                        if (item.Tag == DicomTag.PixelData)
+                        {
+                            //not validated
+                        }
+                        else
+                        {
+                            try
+                            {
+                                item.Validate();
+                            }
+                            catch (DicomValidationException dvx)
+                            {
+                                errCount++;
+                                if (result.Length > 0) result += "\n";
+                                result += dvx.Message;
+                            }
+                        }
+                    }
+                }
+            }
+            if(errCount > 0)
+            {
+                result = "Dataset has " + errCount + " validation errors\n" + result;
+                throw new DicomValidationException(null, null, result);
+            }
+            return true;
+        }
+
         public static IList<IByteBuffer> GetContainedBuffers(this DicomDataset dataset)
         {
             List<IByteBuffer> buffers = new List<IByteBuffer>();

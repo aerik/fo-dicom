@@ -41,7 +41,27 @@ namespace Dicom
         }
 
 
-        public override string Message => $"Content \"{Content}\" does not validate VR {VR.Code}: {base.Message}";
+        public override string Message
+        {
+            get
+            {
+                if(VR != null)
+                {
+                    string content = Content;
+                    if (String.IsNullOrEmpty(content)) content = "(empty)";
+                    return $"Content \"{content}\" does not validate VR {VR.Code}: {base.Message}";
+                }
+                else
+                {
+                    if (!String.IsNullOrEmpty(Content))
+                    {
+                        //should never happen, but just in case...
+                        return $"Content \"{Content}\" does not validate: {base.Message}";
+                    }
+                    return $"Content does not validate: {base.Message}";
+                }
+            }
+        }
 
     }
 }

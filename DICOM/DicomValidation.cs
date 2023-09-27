@@ -22,6 +22,12 @@ namespace Dicom
             set => PerformValidation = value;
         }
 
+        public static void EnableValidation(bool performValidation)
+        {
+            PerformValidation = performValidation;
+        }
+        public static bool ValidationEnabled { get { return PerformValidation; } }
+
         public static void ValidateAE(string content)
         {
             // may not be longer than 16 characters
@@ -105,8 +111,13 @@ namespace Dicom
                 }
 
                 // The date is in the numeric format, validate the month and day components
+                var year = trimmedComponent.Substring(0, 4);
                 var month = trimmedComponent.Substring(4, 2);
                 var day = trimmedComponent.Substring(6, 2);
+                if (int.Parse(year) > DateTime.Now.Year)
+                {
+                    throw new DicomValidationException(content, DicomVR.DA, "Year component is in the future");
+                }
 
                 if (int.Parse(month) > 12)
                 {

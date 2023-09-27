@@ -286,7 +286,10 @@ namespace Dicom
                 {
                     foreach (var x in _masked)
                     {
-                        if (x.MaskTag.IsMatch(tag)) return x;
+                        if (x.MaskTag.IsMatch(tag))
+                        {
+                            return x;
+                        }
                     }
                 }
 
