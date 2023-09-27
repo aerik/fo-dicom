@@ -656,8 +656,50 @@ namespace Dicom
                     tag);
 
             DicomVR vr = null;
-            if (values != null) vr = entry.ValueRepresentations.FirstOrDefault(x => x.ValueType == typeof(T));
-            if (vr == null) vr = entry.ValueRepresentations.First();
+            if (entry == DicomDictionary.UnknownTag && typeof(T) == typeof(string) && values != null)
+            {
+                //make sure we get a bit enough VR for the string
+                long valLen = 0;
+                for(int i=0; i< values.Count; i++)
+                {
+                    if (values[i] != null)
+                    {
+                        T curVal = values[i];
+                        valLen += curVal.ToString().Length;
+                        if (i > 0) valLen++;//accound for multiplicity separator
+                    }
+                }
+                if(values.Count == 1)
+                {
+                    if (valLen < DicomVR.SH.MaximumLength)
+                    {
+                        vr = DicomVR.SH;
+                    }
+                    else if (valLen < DicomVR.LO.MaximumLength)
+                    {
+                        vr = DicomVR.LO;
+                    }
+                    else if (valLen < DicomVR.ST.MaximumLength)
+                    {
+                        vr = DicomVR.ST;
+                    }
+                }
+                if (vr == null) {
+                    if (valLen < DicomVR.LT.MaximumLength)
+                    {
+                        vr = DicomVR.LT;
+                    }
+                    else
+                    {
+                        vr = DicomVR.UT;
+                    }
+                }
+            }
+            else
+            {
+                if (values != null) vr = entry.ValueRepresentations.FirstOrDefault(x => x.ValueType == typeof(T));
+                if (vr == null) vr = entry.ValueRepresentations.First();
+            }
 
             return DoAdd(vr, tag, values, allowUpdate);
         }
