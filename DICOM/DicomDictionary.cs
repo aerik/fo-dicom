@@ -75,7 +75,7 @@ namespace Dicom
 
         private ConcurrentDictionary<DicomTag, DicomDictionaryEntry> _entries;
 
-        private readonly ConcurrentDictionary<string, DicomTag> _keywords;
+        private readonly ConcurrentDictionary<string, DicomTag> _keywords;//lower case, handle as case insensitive
 
         private object _maskedLock;
         private List<DicomDictionaryEntry> _masked;
@@ -306,7 +306,7 @@ namespace Dicom
         }
 
         /// <summary>
-        /// Gets the DIcomTag for a given keyword.
+        /// Gets the DicomTag for a given keyword, case insensitive, excludes keywords for private tags.
         /// </summary>
         /// <param name="keyword">The attribute keyword that we look for.</param>
         /// <returns>A matching DicomTag or null if none is found.</returns>
@@ -314,7 +314,7 @@ namespace Dicom
         {
             get
             {
-                if (_keywords.TryGetValue(keyword, out DicomTag result))
+                if (_keywords.TryGetValue(keyword.ToLower(), out DicomTag result))
                 {
                     return result;
                 }
@@ -347,11 +347,18 @@ namespace Dicom
                 if (entry.MaskTag != null) entry.MaskTag.Tag = entry.Tag;
             }
 
+            if(_keywords.ContainsKey(entry.Keyword.ToLower()))
+            {
+                if (_keywords[entry.Keyword.ToLower()] != entry.Tag)
+                {
+                    throw new ArgumentNullException("keyword", "Keyword '" + entry.Keyword + "' already exists in dictionary");
+                }
+            }
             if (entry.MaskTag == null)
             {
                 // allow overwriting of existing entries
                 _entries[entry.Tag] = entry;
-                _keywords[entry.Keyword] = entry.Tag;
+               if(!entry.Tag.IsPrivate) _keywords[entry.Keyword.ToLower()] = entry.Tag;
             }
             else
             {
@@ -359,7 +366,7 @@ namespace Dicom
                 {
                     _masked.Add(entry);
                     _maskedNeedsSort = true;
-                    _keywords[entry.Keyword] = entry.Tag;
+                    if (!entry.Tag.IsPrivate) _keywords[entry.Keyword.ToLower()] = entry.Tag;
                 }
             }
         }

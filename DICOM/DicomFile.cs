@@ -214,7 +214,7 @@ namespace Dicom
 
                     if (result == DicomReaderResult.Processing)
                     {
-                        throw new DicomFileException(df, "Invalid read return state: {state}", result);
+                        throw new DicomFileException(df, "Invalid read return state: {0}", result);
                     }
                     if (result == DicomReaderResult.Error)
                     {
@@ -274,7 +274,7 @@ namespace Dicom
 
                 if (result == DicomReaderResult.Processing)
                 {
-                    throw new DicomFileException(df, "Invalid read return state: {state}", result);
+                    throw new DicomFileException(df, "Invalid read return state: {0}", result);
                 }
                 if (result == DicomReaderResult.Error)
                 {
@@ -342,7 +342,7 @@ namespace Dicom
 
                     if (result == DicomReaderResult.Processing)
                     {
-                        throw new DicomFileException(df, "Invalid read return state: {state}", result);
+                        throw new DicomFileException(df, "Invalid read return state: {0}", result);
                     }
                     if (result == DicomReaderResult.Error)
                     {
@@ -403,7 +403,7 @@ namespace Dicom
 
                 if (result == DicomReaderResult.Processing)
                 {
-                    throw new DicomFileException(df, "Invalid read return state: {state}", result);
+                    throw new DicomFileException(df, "Invalid read return state: {0}", result);
                 }
                 if (result == DicomReaderResult.Error)
                 {
@@ -487,7 +487,7 @@ namespace Dicom
 
                     if (result == DicomReaderResult.Processing)
                     {
-                        throw new DicomFileException(df, "Invalid read return state: {state}", result);
+                        throw new DicomFileException(df, "Invalid read return state: {0}", result);
                     }
                     if (result == DicomReaderResult.Error)
                     {

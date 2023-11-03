@@ -216,13 +216,18 @@ namespace Dicom.IO.Reader
                 }
 
                 this.result = DicomReaderResult.Processing;
-
+                long lastPos = source.Marker;
                 while (!source.IsEOF && !source.HasReachedMilestone() && this.result == DicomReaderResult.Processing)
                 {
                     if (!this.ParseTag(source)) return;
                     if (!this.ParseVR(source)) return;
                     if (!this.ParseLength(source)) return;
                     if (!this.ParseValue(source)) return;
+                    if (source.Marker == lastPos)//avoid loops
+                    {
+                        throw new DicomDataException("Infinte loop detected parsing dataset");
+                    }
+                    lastPos = source.Marker;
                 }
 
                 if (source.HasReachedMilestone())
@@ -247,13 +252,18 @@ namespace Dicom.IO.Reader
                 }
 
                 this.result = DicomReaderResult.Processing;
-
+                long lastPos = source.Marker;
                 while (!source.IsEOF && !source.HasReachedMilestone() && this.result == DicomReaderResult.Processing)
                 {
                     if (!this.ParseTag(source)) return;
                     if (!this.ParseVR(source)) return;
                     if (!this.ParseLength(source)) return;
                     if (!await this.ParseValueAsync(source).ConfigureAwait(false)) return;
+                    if (source.Marker == lastPos)//avoid loops
+                    {
+                        throw new DicomDataException("Infinte loop detected parsing dataset");
+                    }
+                    lastPos = source.Marker;
                 }
 
                 if (source.HasReachedMilestone())
@@ -323,6 +333,7 @@ namespace Dicom.IO.Reader
 
                     this._tag = new DicomTag(@group, element, creator);
                     this._entry = this.dictionary[this._tag];
+
 
                     if (!this._tag.IsPrivate && this._entry != null && this._entry.MaskTag == null)
                     {
