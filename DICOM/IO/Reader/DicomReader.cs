@@ -216,7 +216,7 @@ namespace Dicom.IO.Reader
                 }
 
                 this.result = DicomReaderResult.Processing;
-                long lastPos = source.Marker;
+                long lastPos = -1;
                 while (!source.IsEOF && !source.HasReachedMilestone() && this.result == DicomReaderResult.Processing)
                 {
                     if (!this.ParseTag(source)) return;
@@ -226,6 +226,9 @@ namespace Dicom.IO.Reader
                     if (source.Marker == lastPos)//avoid loops
                     {
                         throw new DicomDataException("Infinte loop detected parsing dataset");
+                        //or could do
+                        //this.result = DicomReaderResult.Error;
+                        //return;
                     }
                     lastPos = source.Marker;
                 }
@@ -252,7 +255,7 @@ namespace Dicom.IO.Reader
                 }
 
                 this.result = DicomReaderResult.Processing;
-                long lastPos = source.Marker;
+                long lastPos = -1;
                 while (!source.IsEOF && !source.HasReachedMilestone() && this.result == DicomReaderResult.Processing)
                 {
                     if (!this.ParseTag(source)) return;
@@ -262,6 +265,9 @@ namespace Dicom.IO.Reader
                     if (source.Marker == lastPos)//avoid loops
                     {
                         throw new DicomDataException("Infinte loop detected parsing dataset");
+                        //or could do
+                        //this.result = DicomReaderResult.Error;
+                        //return;
                     }
                     lastPos = source.Marker;
                 }
