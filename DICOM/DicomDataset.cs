@@ -178,39 +178,175 @@ namespace Dicom
         }
 
         /// <summary>
+        /// Tries to get the element value of the specified <paramref name="tag"/>, whose value multiplicity has to be 1.
+        /// </summary>
+        /// <typeparam name="T">Type of the return value. This cannot be an array type.</typeparam>
+        /// <param name="tag">Requested DICOM tag.</param>
+        /// <param name="elementValue">Element value corresponding to <paramref name="tag"/>.</param>
+        /// <returns>Returns <code>true</code> if the element values could be exctracted, otherwise <code>false</code>.</returns>
+        public bool TryGetSingleValue<T>(DicomTag tag, out T value)
+        {
+            if (typeof(T).GetTypeInfo().IsArray)
+            {
+                value = default(T);
+                return false;
+            }
+
+            if (!TryValidatePrivate(ref tag))
+            {
+                value = default(T);
+                return false;
+            }
+            if (!_items.TryGetValue(tag, out DicomItem item))
+            {
+                value = default(T);
+                return false;
+            }
+
+            if (item is DicomElement element && element.Count == 1)
+            {
+                try
+                {
+                    value = element.Get<T>(0);
+                    return true;
+                }
+                catch
+                {
+                    value = default(T);
+                    return false;
+                }
+            }
+            else
+            {
+                value = default(T);
+                return false;
+            }
+        }
+
+        private bool TryValidatePrivate(ref DicomTag tag)
+        {
+            if (tag.IsPrivate)
+            {
+                var privateTag = GetPrivateTag(tag, false);
+                if (privateTag == null)
+                {
+                    return false;
+                }
+                tag = privateTag;
+            }
+            return true;
+        }
+
+        ///// <summary>
+        ///// Converts a dictionary tag to a valid private tag. Creates the private creator tag if needed.
+        ///// </summary>
+        ///// <param name="tag">Dictionary DICOM tag</param>
+        ///// <returns>Private DICOM tag</returns>
+        //public DicomTag GetPrivateTag(DicomTag tag)
+        //{
+        //    // not a private tag
+        //    if (!tag.IsPrivate) return tag;
+
+        //    // group length
+        //    if (tag.Element == 0x0000) return tag;
+
+        //    // private creator?
+        //    if (tag.PrivateCreator == null) return tag;
+
+        //    // already a valid private tag
+        //    if (tag.Element >= 0xff) return tag;
+
+        //    ushort group = 0x0010;
+        //    for (; ; group++)
+        //    {
+        //        var creator = new DicomTag(tag.Group, group);
+        //        if (!Contains(creator))
+        //        {
+        //            Add(new DicomLongString(creator, tag.PrivateCreator.Creator));
+        //            break;
+        //        }
+
+        //        var value = Get(creator, string.Empty);
+        //        if (tag.PrivateCreator.Creator == value) return new DicomTag(tag.Group, (ushort)((group << 8) + (tag.Element & 0xff)), tag.PrivateCreator);
+        //    }
+
+        //    return new DicomTag(tag.Group, (ushort)((group << 8) + (tag.Element & 0xff)), tag.PrivateCreator);
+        //}
+
+        /// <summary>
         /// Converts a dictionary tag to a valid private tag. Creates the private creator tag if needed.
         /// </summary>
         /// <param name="tag">Dictionary DICOM tag</param>
-        /// <returns>Private DICOM tag</returns>
+        /// <returns>Private DICOM tag, or null if all groups are already used.</returns>
         public DicomTag GetPrivateTag(DicomTag tag)
         {
+            return GetPrivateTag(tag, true);
+        }
+
+        /// <summary>
+        /// Converts a dictionary tag to a valid private tag.
+        /// </summary>
+        /// <param name="tag">Dictionary DICOM tag</param>
+        /// <param name="createTag">Whether the PrivateCreator tag should be created if needed.</param>
+        /// <returns>Private DICOM tag, or null if all groups are already used or createTag is false and the
+        /// PrivateCreator is not already in the dataset. </returns>
+        internal DicomTag GetPrivateTag(DicomTag tag, bool createTag)
+        {
             // not a private tag
-            if (!tag.IsPrivate) return tag;
+            if (!tag.IsPrivate) return tag;//checks if the tag group is odd
 
             // group length
             if (tag.Element == 0x0000) return tag;
 
-            // private creator?
+            // this is potentially the private creator tag itself
             if (tag.PrivateCreator == null) return tag;
 
-            // already a valid private tag
-            if (tag.Element >= 0xff) return tag;
-
-            ushort group = 0x0010;
-            for (; ; group++)
+            if (tag.Element > 0xff)
             {
-                var creator = new DicomTag(tag.Group, group);
-                if (!Contains(creator))
+                //check if creator tag exists
+                ushort creatorPrefix = (ushort)(tag.Element >> 8);
+                DicomTag creatorTag = new DicomTag(tag.Group, creatorPrefix);//don't set PrivateCreator here?
+                if (!Contains(creatorTag))
                 {
-                    Add(new DicomLongString(creator, tag.PrivateCreator.Creator));
-                    break;
+                    Add(new DicomLongString(creatorTag, tag.PrivateCreator.Creator));//writes the creator tag to the dataset
                 }
-
-                var value = Get(creator, string.Empty);
-                if (tag.PrivateCreator.Creator == value) return new DicomTag(tag.Group, (ushort)((group << 8) + (tag.Element & 0xff)), tag.PrivateCreator);
+                else
+                {
+                    //what if there is a mismatch?
+                    string creatorString = TryGetSingleValue(creatorTag, out string tmpValue) ? tmpValue : string.Empty;
+                    if(creatorString != tag.PrivateCreator.Creator)
+                    {
+                        //uh-oh... ignore it?
+                    }
+                }
             }
 
-            return new DicomTag(tag.Group, (ushort)((group << 8) + (tag.Element & 0xff)), tag.PrivateCreator);
+            // already a valid private tag
+            if (tag.Element > 0xff) return tag;//this allows a valid private tag to be created without ensuring that the creator tag is added to the dataset
+
+            //This loop reassigns the private creator block if that block already is in use, see Dicom standard 7.8.1.c:
+            //"Encoders of Private Data Elements shall be able to dynamically assign private data to any available(unreserved) block(s) within the Private group,
+            //and specify this assignment through the blocks corresponding Private Creator Data Element(s). Decoders of Private Data shall be able to accept
+            //reserved blocks with a given Private Creator identification code at any position within the Private group specified by the blocks corresponding
+            //Private Creator Data Element."
+
+           ushort group = 0x0010;
+            for (; group <= 0x00ff; group++)
+            {
+                var creator = new DicomTag(tag.Group, group);//no private creator assigned to the creator tag
+                if (!Contains(creator))
+                {
+                    if (!createTag) continue;
+
+                    Add(new DicomLongString(creator, tag.PrivateCreator.Creator));//writes the creator tag to the dataset
+
+                    //(observation:  (tag.Element & 0xff) seems unnecessary since there is a check that tag.Element is not greater than 0xff above)
+                    return new DicomTag(tag.Group, (ushort)((group << 8) + (tag.Element & 0xff)), tag.PrivateCreator);
+                }
+                var value = TryGetSingleValue(creator, out string tmpValue) ? tmpValue : string.Empty;
+                if (tag.PrivateCreator.Creator == value) return new DicomTag(tag.Group, (ushort)((group << 8) + (tag.Element & 0xff)), tag.PrivateCreator);
+            }
+            return null;
         }
 
         /// <summary>
@@ -341,6 +477,11 @@ namespace Dicom
         /// <returns><c>True</c> if a DICOM item with the specified tag already exists.</returns>
         public bool Contains(DicomTag tag)
         {
+            if (tag.IsPrivate)
+            {
+                var privateTag = GetPrivateTag(tag, false);
+                return (privateTag != null) && _items.Any(kv => kv.Key.Equals(privateTag));
+            }
             return _items.ContainsKey(tag);
         }
 

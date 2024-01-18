@@ -3,6 +3,7 @@
 
 namespace Dicom.IO
 {
+    using System;
     using System.IO;
 
     /// <summary>
@@ -122,6 +123,11 @@ namespace Dicom.IO
         /// <returns>Stream to the created file.</returns>
         public Stream Create()
         {
+            string dirName = Path.GetDirectoryName(this.Name);
+            if (!System.IO.Directory.Exists(dirName))
+            {
+                System.IO.Directory.CreateDirectory(dirName);
+            }
             var stream = new ReferenceStream(File.Create(this.Name));
             streamList.Add(stream);
             return stream;
@@ -155,6 +161,11 @@ namespace Dicom.IO
         /// <returns>Stream to the opened file.</returns>
         public Stream OpenWrite()
         {
+            string dirName = Path.GetDirectoryName(this.Name);
+            if (!System.IO.Directory.Exists(dirName))
+            {
+                System.IO.Directory.CreateDirectory(dirName);
+            }
             var stream = new ReferenceStream(File.OpenWrite(this.Name));
             streamList.Add(stream);
             return stream;
@@ -165,7 +176,13 @@ namespace Dicom.IO
         /// </summary>
         public void Delete()
         {
-            File.Delete(this.Name);
+            //ignore it if we can't find the directory or the file
+            try
+            {
+                File.Delete(this.Name);
+            }
+            catch (FileNotFoundException) { }
+            catch (DirectoryNotFoundException) { }
         }
 
         /// <summary>

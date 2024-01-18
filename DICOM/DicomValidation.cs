@@ -74,7 +74,7 @@ namespace Dicom
             // Uppercase characters, "0" - "9", the SPACE character, and underscore "_", of the Default Character Repertoire
             if (!Regex.IsMatch(content, "^[A-Z0-9_ ]*$"))
             {
-                throw new DicomValidationException(content, DicomVR.CS, "value contains invalid character. Only uppercase character, digits, space and underscore alre allowed");
+                throw new DicomValidationException(content, DicomVR.CS, "value contains invalid character. Only uppercase character, digits, space and underscore are allowed");
             }
         }
 

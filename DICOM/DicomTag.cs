@@ -142,13 +142,16 @@ namespace Dicom
 
             if (Group != other.Group) return false;
 
-            if (PrivateCreator != null || other.PrivateCreator != null)
+            if (this.IsPrivate && other.IsPrivate)
             {
-                if (PrivateCreator == null || other.PrivateCreator == null) return false;
+                if (PrivateCreator != null || other.PrivateCreator != null)
+                {
+                    if (PrivateCreator == null || other.PrivateCreator == null) return false;
 
-                if (PrivateCreator.Creator != other.PrivateCreator.Creator) return false;
+                    if (PrivateCreator.Creator != other.PrivateCreator.Creator) return false;
 
-                return (Element & 0xff) == (other.Element & 0xff);
+                    return (Element & 0xff) == (other.Element & 0xff);
+                }
             }
 
             return Element == other.Element;

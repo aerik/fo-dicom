@@ -113,8 +113,14 @@ namespace Dicom.Network
             Stream stream = tcpClient.GetStream();
             if (certificate != null)
             {
+                var certSelection = new LocalCertificateSelectionCallback((object sender, string targetHost,
+                    X509CertificateCollection localCertificates, X509Certificate remoteCertificate, string[] acceptableIssuers) =>
+                {
+                    return certificate;
+                });
+
                 var ssl = new SslStream(stream, false, new RemoteCertificateValidationCallback(DummyCertificatValidationCallback),
-                    new LocalCertificateSelectionCallback(LocalCertificateValidationCallback), EncryptionPolicy.RequireEncryption);
+                    certSelection, EncryptionPolicy.RequireEncryption);
 #if !DEBUG
                 ssl.ReadTimeout = 5000;
                 ssl.WriteTimeout = 5000;
@@ -131,21 +137,26 @@ namespace Dicom.Network
                 }
                 catch (Exception x)
                 {
-                    string err = x.Message;
-                    throw new DicomNetworkException("Could not authenticate SSL connection as server: " + x.Message);
+                    try
+                    {
+                        ssl.Dispose();
+                    }
+                    catch { }
+                    throw new DicomNetworkException("Could not authenticate SSL connection as server",x);
                 }
-
-
 #endif
                 stream = ssl;
                 this.Authenticated = ssl.IsMutuallyAuthenticated;
                 this.Encrypted = ssl.IsEncrypted;
                 stream.ReadTimeout = -1;
                 stream.WriteTimeout = -1;
+                string msg = "Secure connection established; Encrypted: " + ssl.IsEncrypted.ToString() + ", Mutually Authenticated: " + ssl.IsMutuallyAuthenticated.ToString();
+                msg += ", SslProtocol: " + ssl.SslProtocol.ToString();
+                Log.LogManager.GetLogger("DicomServer").Info(msg);
             }
-
             this.networkStream = stream;
         }
+
         private static bool DummyCertificatValidationCallback(object sender, X509Certificate certificate, X509Chain chain, SslPolicyErrors sslPolicyErrors)
         {
             bool isOkay = false;
@@ -153,32 +164,37 @@ namespace Dicom.Network
             if (certificate != null)
             {
                 logMsg += "with certficate '" + certificate.Subject + "'";
+                if (sslPolicyErrors == SslPolicyErrors.None)
+                {
+                    isOkay = true;
+                }
+                else
+                {
+                    //check for local certs
+                    if (CertIsStoredLocally(certificate))
+                    {
+                        isOkay = true;
+                        logMsg += ", matches local";
+                    }
+                    else
+                    {
+                        logMsg += ", but has errors: " + sslPolicyErrors.ToString();
+                    }
+                }
+                logMsg += "\nCertificate:\n" + certificate.ToString().Replace("\r", "").Replace("]\n", "]").Replace("\n\n", "\n");
             }
             else
             {
                 logMsg += "with anonymous TLS encryption";
-            }
-
-            if (sslPolicyErrors == SslPolicyErrors.None)
-            {
-                isOkay = true;
-            }
-            else
-            {
-                //check for local certs
-                if (CertIsStoredLocally(certificate))
+                sslPolicyErrors &= ~SslPolicyErrors.RemoteCertificateNotAvailable;
+                if (sslPolicyErrors == SslPolicyErrors.None)
                 {
                     isOkay = true;
-                    logMsg += ", matches local";
                 }
                 else
                 {
                     logMsg += ", but has errors: " + sslPolicyErrors.ToString();
                 }
-            }
-            if (certificate != null)
-            {
-                logMsg += "\nCertificate:\n" + certificate.ToString().Replace("\r", "").Replace("]\n", "]").Replace("\n\n", "\n");
             }
             if (isOkay)
             {
@@ -188,11 +204,11 @@ namespace Dicom.Network
             Log.LogManager.GetLogger("DicomServer").Warn(logMsg);
             return false;
         }
-        private static X509Certificate LocalCertificateValidationCallback(object sender, string targetHost, X509CertificateCollection localCertificates, X509Certificate remoteCertificate, string[] acceptableIssuers)
-        {
-            if (localCertificates != null && localCertificates.Count > 0) return localCertificates[0];
-            return null;
-        }
+        //private static X509Certificate LocalCertificateValidationCallback(object sender, string targetHost, X509CertificateCollection localCertificates, X509Certificate remoteCertificate, string[] acceptableIssuers)
+        //{
+        //    if (localCertificates != null && localCertificates.Count > 0) return localCertificates[0];
+        //    return null;
+        //}
         static bool VerifyCertificate(object sender, X509Certificate certificate, X509Chain chain, SslPolicyErrors sslPolicyErrors)
         {
             if (certificate == null)
@@ -220,25 +236,28 @@ namespace Dicom.Network
 
         private static bool CertIsStoredLocally(X509Certificate certificate)
         {
-            X509Certificate2Collection certs = null;
-            string certSerial = certificate.GetSerialNumberString();
-            using (var store = new X509Store(StoreName.My, StoreLocation.LocalMachine))
+            if (certificate != null)
             {
-                store.Open(OpenFlags.ReadOnly);
-                certs = store.Certificates.Find(X509FindType.FindBySerialNumber, certSerial, false);
-            }
-            if (certs == null || certs.Count == 0)
-            {
-                using (var store = new X509Store("WebHosting", StoreLocation.LocalMachine))
+                X509Certificate2Collection certs = null;
+                string certSerial = certificate.GetSerialNumberString();
+                using (var store = new X509Store(StoreName.My, StoreLocation.LocalMachine))
                 {
                     store.Open(OpenFlags.ReadOnly);
                     certs = store.Certificates.Find(X509FindType.FindBySerialNumber, certSerial, false);
                 }
-            }
-            if (certs != null && certs.Count == 1 && certs[0].GetCertHashString() == certificate.GetCertHashString())
-            {
-                //todo: check cert validity?
-                return true;
+                if (certs == null || certs.Count == 0)
+                {
+                    using (var store = new X509Store("WebHosting", StoreLocation.LocalMachine))
+                    {
+                        store.Open(OpenFlags.ReadOnly);
+                        certs = store.Certificates.Find(X509FindType.FindBySerialNumber, certSerial, false);
+                    }
+                }
+                if (certs != null && certs.Count == 1 && certs[0].GetCertHashString() == certificate.GetCertHashString())
+                {
+                    //todo: check cert validity?
+                    return true;
+                }
             }
             return false;
         }

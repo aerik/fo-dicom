@@ -237,6 +237,12 @@ namespace Dicom.Network
             catch (Exception e)
             {
                 this.Logger.Error("Exception listening for clients, {@error}", e);
+                string debugMsg = "Exception listening for clients, " + e.Message;
+                if(e.InnerException != null)
+                {
+                    debugMsg += " - " + e.InnerException.Message;
+                }
+                debugMsg += "\n\n" + e.StackTrace;
                 this.Stop();
                 this.Exception = e;
             }

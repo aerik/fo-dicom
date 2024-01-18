@@ -573,6 +573,10 @@ namespace Dicom.Network
 
                         var length = BitConverter.ToInt32(buffer, 2);
                         length = Endian.Swap(length);
+                        if(length < 0)
+                        {
+                            throw new DicomDataException("Invalid PDU length: " + length.ToString());
+                        }
 
                         _readLength = length;
 
@@ -1260,6 +1264,7 @@ namespace Dicom.Network
             }
             else
             {
+                if (msg.PresentationContext == null) msg.PresentationContext = pc;//sort of makes dimse.PresentationContext redundant? Not worrying about it now
                 if (msg is DicomRequest)
                 {
                     DicomRequest req = msg as DicomRequest;

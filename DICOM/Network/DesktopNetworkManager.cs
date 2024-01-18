@@ -113,7 +113,7 @@ namespace Dicom.Network
         /// </summary>
         /// <param name="certificateName">Certificate name.</param>
         /// <returns>Certificate with the specified name.</returns>
-        internal static X509Certificate GetX509Certificate(string certificateName)
+        public static X509Certificate GetX509Certificate(string certificateName)
         {
             try
             {
