@@ -4,6 +4,7 @@
 namespace Dicom.Network
 {
     using System;
+    using System.Security.Cryptography.X509Certificates;
 
     /// <summary>
     /// Abstract manager class for network operations.
@@ -71,6 +72,11 @@ namespace Dicom.Network
         public static INetworkListener CreateNetworkListener(int port)
         {
             return implementation.CreateNetworkListenerImpl(port);
+        }
+
+        public static X509Certificate GetX509Certificate(string certificateName)
+        {
+            return implementation.GetX509CertificateImpl(certificateName);
         }
 
         /// <summary>
@@ -145,6 +151,8 @@ namespace Dicom.Network
         /// <param name="identifier">Unique network identifier, if found.</param>
         /// <returns>True if network identifier could be obtained, false otherwise.</returns>
         protected abstract bool TryGetNetworkIdentifierImpl(out DicomUID identifier);
+
+        protected abstract X509Certificate GetX509CertificateImpl(string certificateName);
 
         #endregion
     }

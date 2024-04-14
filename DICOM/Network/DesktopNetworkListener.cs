@@ -101,6 +101,47 @@ namespace Dicom.Network
             return null;
         }
 
+        public async Task<TcpClient> AcceptTcpClientAsync(bool noDelay, CancellationToken token)
+        {
+            var acceptTcpClientTask = this.listener.AcceptTcpClientAsync();
+            using (var cancelSource = CancellationTokenSource.CreateLinkedTokenSource(token))
+            {
+                var awaiter = await Task.WhenAny(acceptTcpClientTask, Task.Delay(-1, cancelSource.Token)).ConfigureAwait(false);
+                cancelSource.Cancel();
+                if (awaiter == acceptTcpClientTask)
+                {
+                    var tcpClient = await acceptTcpClientTask;
+                    tcpClient.NoDelay = noDelay;
+                    return tcpClient;
+                }
+            }
+            //Stop();//?
+            //await acceptTcpClientTask.ConfigureAwait(false);
+            return null;
+        }
+
+        public Task<INetworkStream> GetNetorkStream(TcpClient tcpClient, string certificateName)
+        {
+            X509Certificate certificate = null;
+            if (!string.IsNullOrWhiteSpace(certificateName)) {
+                certificate = DesktopNetworkManager.GetX509Certificate(certificateName);
+            }
+            return Task.Run(() =>
+            {
+                INetworkStream stream = new DesktopNetworkStream(tcpClient, certificate);
+                return stream;
+            });
+        }
+
+        public Task<INetworkStream> GetNetorkStream(TcpClient tcpClient, X509Certificate certificate)
+        {
+            return Task.Run(() =>
+            {
+                INetworkStream stream = new DesktopNetworkStream(tcpClient, certificate);
+                return stream;
+            });
+        }
+
         #endregion
     }
 }

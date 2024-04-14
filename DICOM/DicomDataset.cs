@@ -303,26 +303,30 @@ namespace Dicom
 
             if (tag.Element > 0xff)
             {
-                //check if creator tag exists
-                ushort creatorPrefix = (ushort)(tag.Element >> 8);
-                DicomTag creatorTag = new DicomTag(tag.Group, creatorPrefix);//don't set PrivateCreator here?
-                if (!Contains(creatorTag))
+                if (createTag)
                 {
-                    Add(new DicomLongString(creatorTag, tag.PrivateCreator.Creator));//writes the creator tag to the dataset
-                }
-                else
-                {
-                    //what if there is a mismatch?
-                    string creatorString = TryGetSingleValue(creatorTag, out string tmpValue) ? tmpValue : string.Empty;
-                    if(creatorString != tag.PrivateCreator.Creator)
+                    //check if creator tag exists
+                    ushort creatorPrefix = (ushort)(tag.Element >> 8);
+                    DicomTag creatorTag = new DicomTag(tag.Group, creatorPrefix);//don't set PrivateCreator here?
+                    if (!Contains(creatorTag))
                     {
-                        //uh-oh... ignore it?
+                        Add(new DicomLongString(creatorTag, tag.PrivateCreator.Creator));//writes the creator tag to the dataset
+                    }
+                    else
+                    {
+                        //what if there is a mismatch?
+                        string creatorString = TryGetSingleValue(creatorTag, out string tmpValue) ? tmpValue : string.Empty;
+                        if (creatorString != tag.PrivateCreator.Creator)
+                        {
+                            //uh-oh... ignore it?
+                        }
                     }
                 }
+                return tag;
             }
 
             // already a valid private tag
-            if (tag.Element > 0xff) return tag;//this allows a valid private tag to be created without ensuring that the creator tag is added to the dataset
+            //if (tag.Element > 0xff) return tag;//this allows a valid private tag to be created without ensuring that the creator tag is added to the dataset
 
             //This loop reassigns the private creator block if that block already is in use, see Dicom standard 7.8.1.c:
             //"Encoders of Private Data Elements shall be able to dynamically assign private data to any available(unreserved) block(s) within the Private group,

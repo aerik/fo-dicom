@@ -464,6 +464,16 @@ namespace Dicom
         private static IDictionary<DicomUID, DicomTransferSyntax> Entries =
             new Dictionary<DicomUID, DicomTransferSyntax>();
 
+        private static DicomTransferSyntax[] All
+        {
+            get
+            {
+                DicomTransferSyntax[] result = new DicomTransferSyntax[Entries.Count];
+                Entries.Values.CopyTo(result, 0);
+                return result;
+            }
+        }
+
         static DicomTransferSyntax()
         {
             #region Load Transfer Syntax List

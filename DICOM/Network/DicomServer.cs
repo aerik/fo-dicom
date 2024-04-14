@@ -10,6 +10,7 @@ namespace Dicom.Network
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
+    using System.Security.Cryptography.X509Certificates;
 
     /// <summary>
     /// Representation of a DICOM server.
@@ -198,6 +199,11 @@ namespace Dicom.Network
             try
             {
                 var noDelay = this.Options?.TcpNoDelay ?? DicomServiceOptions.Default.TcpNoDelay;
+                X509Certificate certificate = null;
+                if (!String.IsNullOrWhiteSpace(this.certificateName))
+                {
+                    certificate = NetworkManager.GetX509Certificate(this.certificateName);
+                }
 
                 listener = NetworkManager.CreateNetworkListener(this.Port);
                 await listener.StartAsync().ConfigureAwait(false);
@@ -205,24 +211,51 @@ namespace Dicom.Network
 
                 while (!this.cancellationSource.IsCancellationRequested)
                 {
-                    var networkStream =
-                        await listener.AcceptNetworkStreamAsync(
-                            this.certificateName,
-                            noDelay,
-                            this.cancellationSource.Token).ConfigureAwait(false);
-
-                    if (networkStream != null)
+                    var tcpClient = await listener.AcceptTcpClientAsync(noDelay, this.cancellationSource.Token).ConfigureAwait(false);
+                    if(tcpClient != null)
                     {
-                        var scp = this.CreateScp(networkStream);
-                        if (this.Options != null)
+                        Task<INetworkStream> streamTask = listener.GetNetorkStream(tcpClient, certificate);
+                        _ = streamTask.ContinueWith(task =>
                         {
-                            scp.Options = this.Options;
-                        }
-                        lock (_clientLocker)
-                        {
-                            this.clients.Add(scp);
-                        }
+                            try
+                            {
+                                if (!task.IsFaulted)
+                                {
+                                    var scp = this.CreateScp(task.Result);
+                                    if (this.Options != null)
+                                    {
+                                        scp.Options = this.Options;
+                                    }
+                                    lock (_clientLocker)
+                                    {
+                                        this.clients.Add(scp);
+                                    }
+                                }
+                            }
+                            catch(DicomNetworkException dnx)
+                            {
+                                this.Logger.Error("Error getting network stream: " + dnx.Message);
+                            }
+                        });
                     }
+                    //var networkStream =
+                    //    await listener.AcceptNetworkStreamAsync(
+                    //        this.certificateName,
+                    //        noDelay,
+                    //        this.cancellationSource.Token).ConfigureAwait(false);
+
+                    //if (networkStream != null)
+                    //{
+                    //    var scp = this.CreateScp(networkStream);
+                    //    if (this.Options != null)
+                    //    {
+                    //        scp.Options = this.Options;
+                    //    }
+                    //    lock (_clientLocker)
+                    //    {
+                    //        this.clients.Add(scp);
+                    //    }
+                    //}
                 }
 
                 listener.Stop();

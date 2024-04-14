@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 15
-VisualStudioVersion = 15.0.28307.1145
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.34407.143
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Native", "Native", "{A1D10E37-DC32-4A8E-ABFF-5E5FB3A9687C}"
 EndProject
@@ -96,10 +96,8 @@ Global
 	GlobalSection(SharedMSBuildProjectFiles) = preSolution
 		VetRocket\RocketPACS.Model\RocketPACS.Model.projitems*{45269003-4c6a-4a3f-aa33-01d37359f5f9}*SharedItemsImports = 13
 		DICOM\DICOM.Shared.projitems*{59b38770-d2e7-40b9-8d27-a20691f1caa9}*SharedItemsImports = 4
-		VetRocket\RocketPACS.Model\RocketPACS.Model.projitems*{770f6170-24cf-43ef-85c4-a30679e6b82c}*SharedItemsImports = 4
 		DICOM\DICOM.Shared.projitems*{a661d347-cf7d-4f36-8101-0544ae85eeec}*SharedItemsImports = 4
 		VetRocket\RocketPACS.Model\RocketPACS.Model.projitems*{ae3784ce-5b86-49c1-94b1-6fb375b9196f}*SharedItemsImports = 4
-		VetRocket\RocketPACS.Model\RocketPACS.Model.projitems*{bc657375-50c6-4074-b3e5-f329b602c4ba}*SharedItemsImports = 4
 		DICOM\DICOM.Shared.projitems*{f9539369-1ad0-43b0-a35c-b82f6755c247}*SharedItemsImports = 13
 	EndGlobalSection
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -432,7 +430,6 @@ Global
 		{235BE4E6-E7E4-4C88-8F46-4A2F8FF57705} = {8746408F-FCB0-4241-893E-33D13B9F9FFD}
 		{E3630D9E-5C75-4776-ACB2-E648C23DE9AB} = {8746408F-FCB0-4241-893E-33D13B9F9FFD}
 		{F3D173E6-614D-4936-81E9-95A9863CF833} = {8746408F-FCB0-4241-893E-33D13B9F9FFD}
-		{45269003-4C6A-4A3F-AA33-01D37359F5F9} = {8746408F-FCB0-4241-893E-33D13B9F9FFD}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		BuildVersion_UseGlobalSettings = True

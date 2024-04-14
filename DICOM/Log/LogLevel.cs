@@ -5,14 +5,14 @@ namespace Dicom.Log
 {
     public enum LogLevel
     {
-        Debug,
+        Debug=0,
 
-        Info,
+        Info=1,
 
-        Warning,
+        Warning=2,
 
-        Error,
+        Error=3,
 
-        Fatal
+        Fatal=4
     }
 }

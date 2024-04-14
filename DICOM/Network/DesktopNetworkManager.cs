@@ -113,7 +113,7 @@ namespace Dicom.Network
         /// </summary>
         /// <param name="certificateName">Certificate name.</param>
         /// <returns>Certificate with the specified name.</returns>
-        public static X509Certificate GetX509Certificate(string certificateName)
+        protected override X509Certificate GetX509CertificateImpl(string certificateName)
         {
             try
             {
