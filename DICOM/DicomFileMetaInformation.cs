@@ -60,9 +60,18 @@ namespace Dicom
         {
             this.Version = new byte[] { 0x00, 0x01 };
 
-            if (metaInfo.Contains(DicomTag.MediaStorageSOPClassUID)) this.MediaStorageSOPClassUID = metaInfo.MediaStorageSOPClassUID;
-            if (metaInfo.Contains(DicomTag.MediaStorageSOPInstanceUID)) this.MediaStorageSOPInstanceUID = metaInfo.MediaStorageSOPInstanceUID;
-            if (metaInfo.Contains(DicomTag.TransferSyntaxUID)) this.TransferSyntax = metaInfo.TransferSyntax;
+            if (metaInfo.Contains(DicomTag.MediaStorageSOPClassUID) && metaInfo.MediaStorageSOPClassUID != null)
+            {
+                this.MediaStorageSOPClassUID = metaInfo.MediaStorageSOPClassUID;
+            }
+            if (metaInfo.Contains(DicomTag.MediaStorageSOPInstanceUID) && metaInfo.MediaStorageSOPInstanceUID != null)
+            {
+                this.MediaStorageSOPInstanceUID = metaInfo.MediaStorageSOPInstanceUID;
+            }
+            if (metaInfo.Contains(DicomTag.TransferSyntaxUID) && metaInfo.TransferSyntax != null)
+            {
+                this.TransferSyntax = metaInfo.TransferSyntax;
+            }
 
             this.ImplementationClassUID = DicomImplementation.ClassUID;
             this.ImplementationVersionName = DicomImplementation.Version;
@@ -91,7 +100,7 @@ namespace Dicom
         {
             get
             {
-                return Get<byte[]>(DicomTag.FileMetaInformationVersion);
+                return Get<byte[]>(DicomTag.FileMetaInformationVersion,0,new byte[] { 0 });
             }
             set
             {
@@ -108,7 +117,7 @@ namespace Dicom
             {
                 if (this.Contains(DicomTag.MediaStorageSOPClassUID))
                 {
-                    return Get<DicomUID>(DicomTag.MediaStorageSOPClassUID);
+                    return Get<DicomUID>(DicomTag.MediaStorageSOPClassUID,0,null);
                 }
                 else
                 {
@@ -128,7 +137,7 @@ namespace Dicom
         {
             get
             {
-                return Get<DicomUID>(DicomTag.MediaStorageSOPInstanceUID);
+                return Get<DicomUID>(DicomTag.MediaStorageSOPInstanceUID,0,null);
             }
             set
             {
@@ -143,7 +152,7 @@ namespace Dicom
         {
             get
             {
-                return Get<DicomTransferSyntax>(DicomTag.TransferSyntaxUID);
+                return Get<DicomTransferSyntax>(DicomTag.TransferSyntaxUID,0,null);
             }
             set
             {
