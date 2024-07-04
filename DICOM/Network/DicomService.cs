@@ -25,7 +25,7 @@ namespace Dicom.Network
 
         #region FIELDS
 
-        private bool _disposed = false;
+        private volatile bool _disposed = false;
 
         protected Stream _dimseStream;
 
@@ -60,9 +60,9 @@ namespace Dicom.Network
         private readonly Task _pduListener;
 
         private readonly object _SpeedLocker = new object();
-        private DateTime _SpeedCheckTime = DateTime.Now;
-        private DateTime _LastNetworkSend = DateTime.Now;
-        private DateTime _LastNetworkReceive = DateTime.Now;
+        private DateTime _SpeedCheckTimeUTC = DateTime.UtcNow;
+        private DateTime _LastNetworkSendUTC = DateTime.UtcNow;
+        private DateTime _LastNetworkReceiveUTC = DateTime.UtcNow;
 
         private long _BytesSentCounter = 0;
         private double _NetworkSentMs = 0;
@@ -71,7 +71,7 @@ namespace Dicom.Network
         private long _TotalBytesSent = 0;
         private long _TotalBytesReceived = 0;
 
-        private readonly DateTime _ConnectTime;
+        private readonly DateTime _ConnectTimeUTC;
 
         private readonly string _RemoteHost;
 
@@ -87,7 +87,7 @@ namespace Dicom.Network
         /// <param name="log">Logger</param>
         protected DicomService(INetworkStream stream, Encoding fallbackEncoding, Logger log)
         {
-            _ConnectTime = DateTime.Now;
+            _ConnectTimeUTC = DateTime.UtcNow;
             AssociationState = DicomAssociationState.None;
             _network = stream;
             _RemoteHost = _network.RemoteHost;
@@ -109,18 +109,18 @@ namespace Dicom.Network
 
         #region PROPERTIES
 
-        public DateTime LastActivity
+        public DateTime LastActivityUTC
         {
             get
             {
                 lock (_SpeedLocker)
                 {
                     //use transfer time since CalcSpeed could conceivably be called with zero bytes
-                    if (_LastNetworkReceive > _LastNetworkSend)
+                    if (_LastNetworkReceiveUTC > _LastNetworkSendUTC)
                     {
-                        return _LastNetworkReceive;
+                        return _LastNetworkReceiveUTC;
                     }
-                    return _LastNetworkSend;
+                    return _LastNetworkSendUTC;
                 }
             }
         }
@@ -234,7 +234,13 @@ namespace Dicom.Network
                 {
                     nCount = _networkCounter;
                 }
+                Stream nStream = _network?.AsStream();
                 _network?.Dispose();//this might not be "owned" by the DicomService... TBD
+                try
+                {
+                    nStream?.Dispose();//not disposed by INetworkStream
+                }
+                catch { }
                 _pduQueueWatcher?.Dispose();
                 string logMsg = "";
                 if (LogID != null) logMsg = LogID;
@@ -258,7 +264,7 @@ namespace Dicom.Network
                 logMsg += " n=" + nCount + "\n";
                 lock (_SpeedLocker)
                 {
-                    TimeSpan connectedTime = DateTime.Now - _ConnectTime;
+                    TimeSpan connectedTime = DateTime.UtcNow - _ConnectTimeUTC;
                     logMsg += "Total bytes sent: " + _TotalBytesSent + ", Total bytes received: " + _TotalBytesReceived;
                     logMsg += " Total connection time: " + connectedTime.TotalSeconds + " seconds";
                 }
@@ -286,16 +292,16 @@ namespace Dicom.Network
                     _BytesSentCounter += byteCount;
                     _TotalBytesSent += byteCount;
                     _NetworkSentMs += networkMs;
-                    if (byteCount > 0) _LastNetworkSend = DateTime.Now;
+                    if (byteCount > 0) _LastNetworkSendUTC = DateTime.UtcNow;
                 }
                 else
                 {
                     _BytesReceivedCounter += byteCount;
                     _TotalBytesReceived += byteCount;
                     _NetworkReceivedMs += networkMs;
-                    if (byteCount > 0) _LastNetworkReceive = DateTime.Now;
+                    if (byteCount > 0) _LastNetworkReceiveUTC = DateTime.UtcNow;
                 }
-                TimeSpan ts = DateTime.Now - _SpeedCheckTime;
+                TimeSpan ts = DateTime.UtcNow - _SpeedCheckTimeUTC;
                 double totalMs = ts.TotalMilliseconds;
                 long totalBytes = _BytesReceivedCounter + _BytesSentCounter;
                 if ((force && totalMs > 0) || totalMs > 5000)
@@ -311,7 +317,7 @@ namespace Dicom.Network
                     _BytesReceivedCounter = 0;
                     _NetworkSentMs = 0;
                     _NetworkReceivedMs = 0;
-                    _SpeedCheckTime = DateTime.Now;
+                    _SpeedCheckTimeUTC = DateTime.UtcNow;
                 }
             }
             if (logMsg != null && this.Association != null)
@@ -447,7 +453,7 @@ namespace Dicom.Network
                 string logMsg = "";
                 if (LogID != null) logMsg = LogID + " ";
                 int bytesToWrite = buffer.Length;
-                DateTime start = DateTime.Now;
+                DateTime start = DateTime.UtcNow;
                 bool forceCalcSpeed = true;
                 try
                 {
@@ -504,7 +510,7 @@ namespace Dicom.Network
                 }
                 finally
                 {
-                    TimeSpan elapsed = DateTime.Now - start;
+                    TimeSpan elapsed = DateTime.UtcNow - start;
                     CalcSpeed(bytesToWrite, elapsed.TotalMilliseconds, true, forceCalcSpeed);
                 }
 
@@ -521,11 +527,11 @@ namespace Dicom.Network
         /// <returns></returns>
         private int ReadStream(Stream stream, byte[] buffer, int offset, int count)
         {
-            DateTime start = DateTime.Now;
+            DateTime start = DateTime.UtcNow;
             lock (_networkCounterLock) _networkCounter++;
             int numBytes = stream.Read(buffer, offset, count);
             lock (_networkCounterLock) _networkCounter--;
-            TimeSpan elapsed = DateTime.Now - start;
+            TimeSpan elapsed = DateTime.UtcNow - start;
             //Logger.Debug("Read " + numBytes + " bytes after " + elapsed.TotalMilliseconds);
             CalcSpeed(numBytes, elapsed.TotalMilliseconds, false);
             return numBytes;
@@ -726,6 +732,7 @@ namespace Dicom.Network
                                 throw new DicomNetworkException("Unknown PDU type");
                         }
                     }
+                    //close the network?
                 }
                 catch (ObjectDisposedException ode)
                 {

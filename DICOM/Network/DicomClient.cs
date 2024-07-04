@@ -480,6 +480,10 @@ namespace Dicom.Network
 
                 await completeNotifier.Task.ConfigureAwait(false);
             }
+            catch(DicomAssociationRejectedException rx)
+            {
+                Logger.Error("Failed to send due to Association Rejection: {@error}", rx);
+            }
             catch (Exception e)
             {
                 Logger.Error("Failed to send due to: {@error}", e);

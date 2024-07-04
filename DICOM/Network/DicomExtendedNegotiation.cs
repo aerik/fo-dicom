@@ -39,10 +39,10 @@ namespace Dicom.Network
 
         static DicomExtendedNegotiation()
         {
-            AddSubItemCreator(DicomUID.StudyRootQueryRetrieveInformationModelFIND, RootQueryRetrieveInfoFind.Create);
-            AddSubItemCreator(DicomUID.PatientRootQueryRetrieveInformationModelFIND, RootQueryRetrieveInfoFind.Create);
-            AddSubItemCreator(DicomUID.StudyRootQueryRetrieveInformationModelMOVE, RootQueryRetrieveInfoMove.Create);
-            AddSubItemCreator(DicomUID.PatientRootQueryRetrieveInformationModelMOVE, RootQueryRetrieveInfoMove.Create);
+            AddSubItemCreator(DicomUID.StudyRootQueryRetrieveInformationModelFind, RootQueryRetrieveInfoFind.Create);
+            AddSubItemCreator(DicomUID.PatientRootQueryRetrieveInformationModelFind, RootQueryRetrieveInfoFind.Create);
+            AddSubItemCreator(DicomUID.StudyRootQueryRetrieveInformationModelMove, RootQueryRetrieveInfoMove.Create);
+            AddSubItemCreator(DicomUID.PatientRootQueryRetrieveInformationModelMove, RootQueryRetrieveInfoMove.Create);
         }
 
         /// <summary>

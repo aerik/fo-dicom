@@ -4,6 +4,7 @@
 namespace Dicom.Imaging.Codec
 {
     using System.Collections.Generic;
+    using System.Data;
 
     /// <summary>
     /// Abstract manager class for DICOM transcoder operations.
@@ -51,6 +52,17 @@ namespace Dicom.Imaging.Codec
         public static bool HasCodec(DicomTransferSyntax syntax)
         {
             return Codecs.ContainsKey(syntax);
+        }
+
+        public static bool CanTranscode(DicomDataset dataset)
+        {
+            if (!dataset.Contains(DicomTag.PixelData)) return false;
+            DicomUID sopClass = dataset.Get<DicomUID>(DicomTag.SOPClassUID, null);
+            if(sopClass == null || !sopClass.IsImageStorage) return false;
+            if (!dataset.Contains(DicomTag.PhotometricInterpretation)) return false;
+            if (dataset.InternalTransferSyntax == null) return false;
+            if (!dataset.InternalTransferSyntax.IsEncapsulated) return true;
+            return HasCodec(dataset.InternalTransferSyntax);
         }
 
         /// <summary>

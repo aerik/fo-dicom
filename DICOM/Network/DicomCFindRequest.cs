@@ -271,13 +271,13 @@ namespace Dicom.Network
             switch (level)
             {
                 case DicomQueryRetrieveLevel.Patient:
-                    return DicomUID.PatientRootQueryRetrieveInformationModelFIND;
+                    return DicomUID.PatientRootQueryRetrieveInformationModelFind;
                 case DicomQueryRetrieveLevel.Study:
                 case DicomQueryRetrieveLevel.Series:
                 case DicomQueryRetrieveLevel.Image:
-                    return DicomUID.StudyRootQueryRetrieveInformationModelFIND;
+                    return DicomUID.StudyRootQueryRetrieveInformationModelFind;
                 case DicomQueryRetrieveLevel.Worklist:
-                    return DicomUID.ModalityWorklistInformationModelFIND;
+                    return DicomUID.ModalityWorklistInformationModelFind;
                 default:
                     throw new ArgumentOutOfRangeException(nameof(level), level, null);
             }

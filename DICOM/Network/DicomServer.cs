@@ -308,19 +308,19 @@ namespace Dicom.Network
                             {
                                 this.clients.RemoveAt(i);
                             }
-                            else if (!curClient.IsConnected)
-                            {
-                                curClient.Dispose();
-                                this.clients.RemoveAt(i);
-                            }
                             else
                             {
-                                //close connections with no recent activity
-                                DateTime lastActive = curClient.LastActivity;
-                                var elapsed = DateTime.Now - lastActive;
-                                if (elapsed.TotalMinutes > 10) // was one minute, too short
+                                DateTime lastActiveUTC = curClient.LastActivityUTC;
+                                var elapsed = DateTime.UtcNow - lastActiveUTC;
+                                //wait one second to dispose everything
+                                if (!curClient.IsConnected && elapsed.TotalSeconds > 1)
                                 {
-                                    this.Logger.Warn("Client " + curClient.RemoteHost + " has no activity since " + lastActive.ToString() + ", disconnecting");
+                                    curClient.Dispose();
+                                    this.clients.RemoveAt(i);
+                                }
+                                else if (elapsed.TotalMinutes > 10) //close connections with no recent activity
+                                {
+                                    this.Logger.Warn("Client " + curClient.RemoteHost + " has no activity since " + lastActiveUTC.ToString() + " (UTC), disconnecting");
                                     curClient.Dispose();
                                     this.clients.RemoveAt(i);
                                 }

@@ -8,7 +8,7 @@ namespace Dicom.Printing
     public class PresentationLut : DicomDataset
     {
 
-        public static readonly DicomUID SopClassUid = DicomUID.PresentationLUTSOPClass;
+        public static readonly DicomUID SopClassUid = DicomUID.PresentationLUT;
 
         public DicomUID SopInstanceUid { get; private set; }
 

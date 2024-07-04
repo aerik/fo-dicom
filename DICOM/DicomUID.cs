@@ -11,49 +11,32 @@ namespace Dicom
     public enum DicomUidType
     {
         TransferSyntax,
-
         SOPClass,
-
         MetaSOPClass,
-
         ServiceClass,
-
         SOPInstance,
-
         ApplicationContextName,
-
         ApplicationHostingModel,
-
         CodingScheme,
-
         FrameOfReference,
-
         LDAP,
-
         MappingResource,
-
         ContextGroupName,
-
         Unknown
     }
 
     public enum DicomStorageCategory
     {
         None,
-
         Image,
-
         PresentationState,
-
         StructuredReport,
-
         Waveform,
-
         Document,
-
         Raw,
-
-        Other
+        Other,
+        Private,
+        Volume
     }
 
     public sealed partial class DicomUID : DicomParseable
@@ -190,30 +173,69 @@ namespace Dicom
         {
             get
             {
-                if (Type != DicomUidType.SOPClass || !Name.Contains("Storage")) return DicomStorageCategory.None;
+                if (!UID.StartsWith("1.2.840.10008") && Type == DicomUidType.SOPClass)
+                {
+                    return DicomStorageCategory.Private;
+                }
 
-                if (Name.Contains("Image Storage")) return DicomStorageCategory.Image;
+                if (Type != DicomUidType.SOPClass || Name.StartsWith("Storage Commitment") || !Name.Contains("Storage"))
+                {
+                    return DicomStorageCategory.None;
+                }
 
-                if (this == DicomUID.BlendingSoftcopyPresentationStateStorageSOPClass
-                    || this == DicomUID.ColorSoftcopyPresentationStateStorageSOPClass
-                    || this == DicomUID.GrayscaleSoftcopyPresentationStateStorageSOPClass
-                    || this == DicomUID.PseudoColorSoftcopyPresentationStateStorageSOPClass) return DicomStorageCategory.PresentationState;
+                if (Name.Contains("Image Storage"))
+                {
+                    return DicomStorageCategory.Image;
+                }
 
-                if (this == DicomUID.AudioSRStorageTrialRETIRED || this == DicomUID.BasicTextSRStorage
-                    || this == DicomUID.ChestCADSRStorage || this == DicomUID.ComprehensiveSRStorage
-                    || this == DicomUID.ComprehensiveSRStorageTrialRETIRED
-                    || this == DicomUID.DetailSRStorageTrialRETIRED || this == DicomUID.EnhancedSRStorage
-                    || this == DicomUID.MammographyCADSRStorage || this == DicomUID.TextSRStorageTrialRETIRED
-                    || this == DicomUID.XRayRadiationDoseSRStorage) return DicomStorageCategory.StructuredReport;
+                if (Name.Contains("Volume Storage"))
+                {
+                    return DicomStorageCategory.Volume;
+                }
 
-                if (this == DicomUID.AmbulatoryECGWaveformStorage || this == DicomUID.BasicVoiceAudioWaveformStorage
-                    || this == DicomUID.CardiacElectrophysiologyWaveformStorage
-                    || this == DicomUID.GeneralECGWaveformStorage || this == DicomUID.HemodynamicWaveformStorage
-                    || this == DicomUID.TwelveLeadECGWaveformStorage || this == DicomUID.WaveformStorageTrialRETIRED) return DicomStorageCategory.Waveform;
+                if (this == BlendingSoftcopyPresentationStateStorage
+                    || this == ColorSoftcopyPresentationStateStorage
+                    || this == GrayscaleSoftcopyPresentationStateStorage
+                    || this == PseudoColorSoftcopyPresentationStateStorage)
+                {
+                    return DicomStorageCategory.PresentationState;
+                }
 
-                if (this == DicomUID.EncapsulatedCDAStorage || this == DicomUID.EncapsulatedPDFStorage) return DicomStorageCategory.Document;
+                if (this == AudioSRStorageTrialRETIRED
+                    || this == BasicTextSRStorage
+                    || this == ChestCADSRStorage
+                    || this == ComprehensiveSRStorage
+                    || this == ComprehensiveSRStorageTrialRETIRED
+                    || this == DetailSRStorageTrialRETIRED
+                    || this == EnhancedSRStorage
+                    || this == MammographyCADSRStorage
+                    || this == TextSRStorageTrialRETIRED
+                    || this == XRayRadiationDoseSRStorage)
+                {
+                    return DicomStorageCategory.StructuredReport;
+                }
 
-                if (this == DicomUID.RawDataStorage) return DicomStorageCategory.Raw;
+                if (this == AmbulatoryECGWaveformStorage
+                    || this == BasicVoiceAudioWaveformStorage
+                    || this == CardiacElectrophysiologyWaveformStorage
+                    || this == GeneralECGWaveformStorage
+                    || this == HemodynamicWaveformStorage
+                    || this == TwelveLeadECGWaveformStorage
+                    || this == WaveformStorageTrialRETIRED)
+                {
+                    return DicomStorageCategory.Waveform;
+                }
+
+                if (this == EncapsulatedCDAStorage
+                    || this == EncapsulatedPDFStorage)
+                {
+                    return DicomStorageCategory.Document;
+                }
+
+                if (this == RawDataStorage)
+                {
+                    return DicomStorageCategory.Raw;
+                }
 
                 return DicomStorageCategory.Other;
             }

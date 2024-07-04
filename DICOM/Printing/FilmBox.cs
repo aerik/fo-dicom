@@ -33,7 +33,7 @@ namespace Dicom.Printing
         /// <summary>
         /// Basic film box SOP class UID
         /// </summary>
-        public static readonly DicomUID SOPClassUID = DicomUID.BasicFilmBoxSOPClass;
+        public static readonly DicomUID SOPClassUID = DicomUID.BasicFilmBox;
 
         /// <summary>
         /// Basic film box SOP instance UID
@@ -646,11 +646,11 @@ namespace Dicom.Printing
         /// </summary>
         private void CreateImageBox()
         {
-            DicomUID classUid = DicomUID.BasicGrayscaleImageBoxSOPClass;
+            DicomUID classUid = DicomUID.BasicGrayscaleImageBox;
 
             if (_filmSession.IsColor)
             {
-                classUid = DicomUID.BasicColorImageBoxSOPClass;
+                classUid = DicomUID.BasicColorImageBox;
             }
 
             DicomUID sopInstance = new DicomUID(

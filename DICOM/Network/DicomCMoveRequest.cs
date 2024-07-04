@@ -29,7 +29,7 @@ namespace Dicom.Network
             string destinationAe,
             string studyInstanceUid,
             DicomPriority priority = DicomPriority.Medium)
-            : base(DicomCommandField.CMoveRequest, DicomUID.StudyRootQueryRetrieveInformationModelMOVE, priority)
+            : base(DicomCommandField.CMoveRequest, DicomUID.StudyRootQueryRetrieveInformationModelMove, priority)
         {
             DestinationAE = destinationAe;
             Dataset = new DicomDataset();
@@ -49,7 +49,7 @@ namespace Dicom.Network
             string studyInstanceUid,
             string seriesInstanceUid,
             DicomPriority priority = DicomPriority.Medium)
-            : base(DicomCommandField.CMoveRequest, DicomUID.StudyRootQueryRetrieveInformationModelMOVE, priority)
+            : base(DicomCommandField.CMoveRequest, DicomUID.StudyRootQueryRetrieveInformationModelMove, priority)
         {
             DestinationAE = destinationAe;
             Dataset = new DicomDataset();
@@ -72,7 +72,7 @@ namespace Dicom.Network
             string seriesInstanceUid,
             string sopInstanceUid,
             DicomPriority priority = DicomPriority.Medium)
-            : base(DicomCommandField.CMoveRequest, DicomUID.StudyRootQueryRetrieveInformationModelMOVE, priority)
+            : base(DicomCommandField.CMoveRequest, DicomUID.StudyRootQueryRetrieveInformationModelMove, priority)
         {
             DestinationAE = destinationAe;
             Dataset = new DicomDataset();

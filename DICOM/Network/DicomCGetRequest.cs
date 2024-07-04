@@ -33,7 +33,7 @@ namespace Dicom.Network
         public DicomCGetRequest(
             string studyInstanceUid,
             DicomPriority priority = DicomPriority.Medium)
-            : base(DicomCommandField.CGetRequest, DicomUID.StudyRootQueryRetrieveInformationModelGET, priority)
+            : base(DicomCommandField.CGetRequest, DicomUID.StudyRootQueryRetrieveInformationModelGet, priority)
         {
             Dataset = new DicomDataset();
             Level = DicomQueryRetrieveLevel.Study;
@@ -56,7 +56,7 @@ namespace Dicom.Network
             string studyInstanceUid,
             string seriesInstanceUid,
             DicomPriority priority = DicomPriority.Medium)
-            : base(DicomCommandField.CGetRequest, DicomUID.StudyRootQueryRetrieveInformationModelGET, priority)
+            : base(DicomCommandField.CGetRequest, DicomUID.StudyRootQueryRetrieveInformationModelGet, priority)
         {
             Dataset = new DicomDataset();
             Level = DicomQueryRetrieveLevel.Series;
@@ -84,7 +84,7 @@ namespace Dicom.Network
             string seriesInstanceUid,
             string sopInstanceUid,
             DicomPriority priority = DicomPriority.Medium)
-            : base(DicomCommandField.CGetRequest, DicomUID.StudyRootQueryRetrieveInformationModelGET, priority)
+            : base(DicomCommandField.CGetRequest, DicomUID.StudyRootQueryRetrieveInformationModelGet, priority)
         {
             Dataset = new DicomDataset();
             Level = DicomQueryRetrieveLevel.Image;
