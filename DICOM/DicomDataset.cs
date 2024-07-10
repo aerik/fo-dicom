@@ -176,6 +176,33 @@ namespace Dicom
         {
             return Get<T>(tag, n, true, defaultValue);
         }
+        /// <summary>
+        /// Gets the element value of the specified <paramref name="tag"/>, whose value multiplicity has to be 1.
+        /// </summary>
+        /// <typeparam name="T">Type of the return value. This cannot be an array type.</typeparam>
+        /// <param name="tag">Requested DICOM tag.</param>
+        /// <returns>Element values corresponding to <paramref name="tag"/>.</returns>
+        /// <exception cref="DicomDataException">If the dataset does not contain <paramref name="tag"/>, is empty or is multi-valued.</exception>
+        public T GetSingleValue<T>(DicomTag tag)
+        {
+            if (typeof(T).GetTypeInfo().IsArray) { throw new DicomDataException("T can't be an Array type. Use GetValues instead"); }
+
+            tag = ValidatePrivate(tag);
+            ValidateDicomTag(tag, out DicomItem item);
+
+            if (item is DicomElement element)
+            {
+                if (typeof(IByteBuffer).GetTypeInfo().IsAssignableFrom(typeof(T).GetTypeInfo())) { return (T)(object)element.Buffer; }
+
+                if (element.Count != 1) { throw new DicomDataException($"DICOM element {tag} must contain a single value, but contains {element.Count}"); }
+
+                return element.Get<T>(0);
+            }
+            else
+            {
+                throw new DicomDataException("DicomTag doesn't support values.");
+            }
+        }
 
         /// <summary>
         /// Tries to get the element value of the specified <paramref name="tag"/>, whose value multiplicity has to be 1.
@@ -223,6 +250,18 @@ namespace Dicom
             }
         }
 
+        private DicomTag ValidatePrivate(DicomTag tag)
+        {
+            if (TryValidatePrivate(ref tag))
+            {
+                return tag;
+            }
+            else
+            {
+                throw new DicomDataException($"Tag: {tag} not found in dataset");
+            }
+        }
+
         private bool TryValidatePrivate(ref DicomTag tag)
         {
             if (tag.IsPrivate)
@@ -235,6 +274,14 @@ namespace Dicom
                 tag = privateTag;
             }
             return true;
+        }
+
+        private void ValidateDicomTag(DicomTag tag, out DicomItem item)
+        {
+            if (!_items.TryGetValue(tag, out item))
+            {
+                throw new DicomDataException($"Tag: {tag} not found in dataset");
+            }
         }
 
         ///// <summary>
