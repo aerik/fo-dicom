@@ -740,6 +740,39 @@ namespace Dicom
             return Lookup(DicomUID.Parse(uid));
         }
 
+        public static DicomTransferSyntax ParseForced(string syntaxUid)
+        {
+            if (syntaxUid == null) throw new ArgumentNullException(nameof(syntaxUid));
+            if (!DicomUID.IsValid(syntaxUid))
+            {
+                throw new ArgumentException("Cannot parse TransferSyntax, not a valid UID: " + syntaxUid);
+            }
+            DicomUID uid = DicomUID.Parse(syntaxUid);
+
+            if (Entries.TryGetValue(uid, out DicomTransferSyntax tx)) return tx;
+
+            if (uid.Type == DicomUidType.TransferSyntax)
+            {
+                return new DicomTransferSyntax(uid)
+                {
+                    IsRetired = uid.IsRetired,
+                    IsExplicitVR = true,
+                    IsEncapsulated = true,
+                    Endian = Endian.Little
+                };
+            }
+            else
+            {
+                return new DicomTransferSyntax(uid)
+                {
+                    IsRetired = true,
+                    IsExplicitVR = true,
+                    IsEncapsulated = true,
+                    Endian = Endian.Little
+                };
+            }
+        }
+
         public static DicomTransferSyntax Lookup(DicomUID uid)
         {
             if (uid == null) throw new ArgumentNullException(nameof(uid));

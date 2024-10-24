@@ -254,7 +254,9 @@ namespace Dicom.Network
         /// <param name="result">Result status to return for this proposed presentation context.</param>
         public void SetResult(DicomPresentationContextResult result)
         {
-            SetResult(result, _transferSyntaxes[0]);
+            DicomTransferSyntax accepted = null;
+            if(_transferSyntaxes.Count > 0)  accepted = _transferSyntaxes[0];
+            SetResult(result, accepted);
         }
 
         /// <summary>
@@ -267,7 +269,7 @@ namespace Dicom.Network
         public void SetResult(DicomPresentationContextResult result, DicomTransferSyntax acceptedTransferSyntax)
         {
             _transferSyntaxes.Clear();
-            _transferSyntaxes.Add(acceptedTransferSyntax);
+            if(acceptedTransferSyntax != null && !this.HasTransferSyntax(acceptedTransferSyntax)) _transferSyntaxes.Add(acceptedTransferSyntax);
             _result = result;
         }
 
@@ -367,7 +369,13 @@ namespace Dicom.Network
         /// <returns><code>true</code> if <paramref name="ts">transfer syntax</paramref> is supported, <code>false</code> otherwise.</returns>
         public bool HasTransferSyntax(DicomTransferSyntax ts)
         {
-            return _transferSyntaxes.Contains(ts);
+            if (ts == null) return false;
+            if(_transferSyntaxes.Count == 0) return false;
+            for(int i=0; i< _transferSyntaxes.Count; i++)
+            {
+                if (_transferSyntaxes[i].UID.UID == ts.UID.UID) return true;
+            }
+            return false;
         }
 
         /// <summary>

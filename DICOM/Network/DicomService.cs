@@ -621,7 +621,15 @@ namespace Dicom.Network
                                         LocalPort = _network.LocalPort
                                     };
                                     var pdu = new AAssociateRQ(Association);
-                                    pdu.Read(raw);
+                                    try //neurotic troubleshooting
+                                    {
+                                        pdu.Read(raw);
+                                    }
+                                    catch (Exception ex)
+                                    {
+                                        Logger.Error("Error reading assocaition request: " + ex.Message);
+                                        Logger.Debug("Error reading assocaition request: " + ex.Message + "\n" + ex.StackTrace);
+                                    }
                                     LogID = Association.CallingAE + " (" + Association.AssociationId.ToString() + ")";
                                     if (Options.UseRemoteAEForLogName)
                                     {
@@ -642,7 +650,6 @@ namespace Dicom.Network
                                         {
                                             reqStr = "{callingAE} <- Association request with anonymous TLS:\n{association}";
                                         }
-
                                     }
                                     Logger.Info(
                                         reqStr,
@@ -910,6 +917,7 @@ namespace Dicom.Network
                             }
                             _dimse.PresentationContext =
                                 Association.PresentationContexts.FirstOrDefault(x => x.ID == pdv.PCID);
+                            _dimse.Association = Association;
                             if (!_dimse.HasDataset)
                             {
                                 PerformDimse(this._dimse);
@@ -991,7 +999,8 @@ namespace Dicom.Network
 
         private void PerformDimse(DicomMessage dimse)
         {
-            Logger.Info("{logId} <- {dicomMessage}", LogID, dimse.ToString(Options.LogDimseDatasets));
+            Logger.Info("{logId} <- {dicomMessage}", LogID, dimse.ToString(false));
+            if(Options.LogDimseDatasets) Logger.Debug("{logId} <- {dicomMessage}", LogID, dimse.ToString(true));
 
             if (!DicomMessage.IsRequest(dimse.Type))
             {
@@ -1324,7 +1333,9 @@ namespace Dicom.Network
                         dimse.Walker = new DicomDatasetWalker(dimse.Message.Dataset);
                         dimse.Walker.Walk(writer);
                     }
-                    Logger.Info("{logId} -> {dicomMessage}", LogID, msg.ToString(Options.LogDimseDatasets));
+                    Logger.Info("{logId} -> {dicomMessage}", LogID, msg.ToString(false));
+                    if (Options.LogDimseDatasets) Logger.Debug("{logId} <- {dicomMessage}", LogID, msg.ToString(true));
+
                 }
                 catch (Exception e)
                 {

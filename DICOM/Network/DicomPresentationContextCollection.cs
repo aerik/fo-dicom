@@ -255,6 +255,11 @@ namespace Dicom.Network
             return _pc.ContainsKey(item.ID) && _pc[item.ID].AbstractSyntax == item.AbstractSyntax;
         }
 
+        public bool ContainsKey(byte itemId)
+        {
+            return _pc.ContainsKey(itemId);
+        }
+
         /// <summary>
         /// Copies the elements of the <see cref="T:System.Collections.Generic.ICollection`1"/> to an <see cref="T:System.Array"/>, starting at a particular <see cref="T:System.Array"/> index.
         /// </summary>

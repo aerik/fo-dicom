@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Security.Cryptography;
 
 namespace Dicom.Network
 {
@@ -589,6 +590,10 @@ namespace Dicom.Network
                             byte pt = raw.ReadByte("Presentation Context Item-Type");
                             raw.SkipBytes("Reserved", 1);
                             ushort pl = raw.ReadUInt16("Presentation Context Item-Length");
+                            if(pl < 1)
+                            {
+                                throw new InvalidDataException("Invalid item length found in PDU: "+pl.ToString());
+                            }
                             string sx = raw.ReadString("Presentation Context Syntax UID", pl);
                             if (pt == 0x30)
                             {
@@ -597,14 +602,37 @@ namespace Dicom.Network
                             }
                             else if (pt == 0x40)
                             {
-                                var pc = _assoc.PresentationContexts[id];
-                                pc.AddTransferSyntax(DicomTransferSyntax.Parse(sx));
+                                if (DicomUID.IsValid(sx)) {
+                                    var pc = _assoc.PresentationContexts[id];
+                                    try
+                                    {
+                                        DicomUID tuid = DicomUID.Parse(sx);
+                                        DicomTransferSyntax ptx = DicomTransferSyntax.ParseForced(sx);
+                                        if (!pc.HasTransferSyntax(ptx))
+                                        {
+                                            pc.AddTransferSyntax(ptx);
+                                        }
+                                    }
+                                    catch (DicomDataException tsx)
+                                    {
+                                        //failed toparse transfer syntax?
+                                        throw new InvalidDataException("Could not parse or add Transfer Syntax: " + sx);
+                                    }
+                                }
+                                else
+                                {
+                                    throw new InvalidDataException("The value '" + sx + "' is not a valid UID");
+                                }
                             }
                             il -= (ushort)(4 + pl);
                         }
                     }
                     catch (DicomException)
                     {
+                        if (_assoc.PresentationContexts.ContainsKey(id))
+                        {
+                            _assoc.PresentationContexts.Remove(_assoc.PresentationContexts[id]);
+                        }
                         var pc = new DicomPresentationContext(id, DicomUID.Parse("error"));
                         _assoc.PresentationContexts.Add(pc);
                         raw.Reset(ilPos + originalItemLength);
