@@ -482,7 +482,11 @@ namespace Dicom.Network
             }
             catch(DicomAssociationRejectedException rx)
             {
-                Logger.Error("Failed to send due to Association Rejection: {@error}", rx);
+                Logger.Warn("Failed to send due to Association Rejection: {@error}", rx);
+            }
+            catch(DicomAssociationAbortedException daax)
+            {
+                Logger.Warn("Error sending due to Association Abort: {@error}", daax);
             }
             catch (Exception e)
             {
@@ -766,7 +770,10 @@ namespace Dicom.Network
 
                     if (IsSendQueueEmpty)
                     {
-                        await DoSendAssociationReleaseRequestAsync().ConfigureAwait(false);
+                        if (this.AssociationState != DicomAssociationState.Released && this.AssociationState != DicomAssociationState.Aborted)
+                        {
+                            await DoSendAssociationReleaseRequestAsync().ConfigureAwait(false);
+                        }
                         break;
                     }
                 }

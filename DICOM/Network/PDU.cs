@@ -6,7 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Security.Cryptography;
+using System.Text;
 
 namespace Dicom.Network
 {
@@ -90,6 +90,58 @@ namespace Dicom.Network
             {
                 return _ms.Position;
             }
+        }
+
+        internal string Dump()
+        {
+            string dumpStr = null;
+            try
+            {
+                // Save the current position
+                long originalPosition = _ms.Position;
+
+                // Move to the beginning of the stream to read all contents
+                _ms.Position = 0;
+                byte[] buffer = new byte[_ms.Length];
+                _ms.Read(buffer, 0, buffer.Length);
+
+                // Restore the original position
+                _ms.Position = originalPosition;
+                StringBuilder output = new StringBuilder();
+                int columnCount = 0;
+
+                foreach (byte b in buffer)
+                {
+                    // Check if the byte is a printable ASCII character
+                    if (b > 32 && b < 127)  // Printable ASCII range, excluding space
+                    {
+                        output.Append(' ');
+                        output.Append((char)b);
+                    }
+                    else
+                    {
+                        output.AppendFormat("{0:X2}", b);
+                    }
+
+                    columnCount++;
+
+                    // Add a space after each character or hex value
+                    output.Append(" ");
+
+                    // Add newline every 40 columns
+                    if (columnCount == 20)
+                    {
+                        output.AppendLine();
+                        columnCount = 0;
+                    }
+                }
+                dumpStr = output.ToString().TrimEnd();
+            }
+            catch (Exception ex)
+            {
+                dumpStr = "ERROR dumping PDU: " + ex.Message;
+            }
+            return dumpStr;
         }
 
         #region Public Methods
@@ -872,20 +924,39 @@ namespace Dicom.Network
                     byte id = raw.ReadByte("Presentation Context ID");
                     raw.ReadByte("Reserved");
                     byte res = raw.ReadByte("Presentation Context Result/Reason");
+                    DicomPresentationContextResult pcRes = (DicomPresentationContextResult)res;
+                    DicomTransferSyntax ts = null;
                     raw.ReadByte("Reserved");
                     l -= (uint)pl + 3;
                     pl -= 4;
-
-                    // Presentation Context Transfer Syntax
-                    raw.ReadByte("Presentation Context Item-Type (0x40)");
-                    raw.ReadByte("Reserved");
-                    ushort tl = raw.ReadUInt16("Presentation Context Item-Length");
-                    string tx = raw.ReadString("Presentation Context Syntax UID", tl);
-                    pl -= (ushort)(tl + 4);
-
-                    _assoc.PresentationContexts[id].SetResult(
-                        (DicomPresentationContextResult)res,
-                        DicomTransferSyntax.Parse(tx));
+                    // When the Result/Reason field has a value other than acceptance (0), this field shall not be significant and its value shall not be tested when received. 
+                    if (pl > 0)//should always be greater than zero when pcRes is accepted
+                    {
+                        // Presentation Context Transfer Syntax
+                        byte pcit = raw.ReadByte("Presentation Context Sub Item-Type (0x40)");
+                        if(pcit == 0x40)//0x40 is transfer syntax sub item
+                        {
+                            raw.ReadByte("Reserved");
+                            ushort tl = raw.ReadUInt16("Presentation Context Item-Length");
+                            string tx = raw.ReadString("Presentation Context Syntax UID", tl);
+                            pl -= (ushort)(tl + 4);
+                            if(!String.IsNullOrEmpty(tx))
+                            {
+                                if (DicomUID.IsValid(tx))
+                                {
+                                    ts = DicomTransferSyntax.ParseForced(tx);
+                                }
+                                else
+                                {
+                                    throw new DicomDataException("Invalid UID: " + tx);
+                                }
+                            }
+                        }//else invalid item??
+                    }
+                    _assoc.PresentationContexts[id].SetResult(pcRes, ts);
+                    //_assoc.PresentationContexts[id].SetResult(
+                    //    (DicomPresentationContextResult)res,
+                    //    DicomTransferSyntax.Parse(tx));
                 }
                 else if (type == 0x50)
                 {

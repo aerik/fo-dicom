@@ -16,12 +16,13 @@ namespace Dicom.Network
     using System.Threading;
     using System.Threading.Tasks;
 
+
     /// <summary>
     /// Base class for DICOM network services.
     /// </summary>
     public abstract class DicomService : IDisposable
     {
-        public enum DicomAssociationState { None = 0, Requested = 1, Accepted = 2, Rejected = 3, ReleaseRequested = 4, Released = 5 }
+        public enum DicomAssociationState { None = 0, Requested = 1, Accepted = 2, Rejected = 3, ReleaseRequested = 4, Released = 5, Aborted = 6 }
 
         #region FIELDS
 
@@ -536,10 +537,13 @@ namespace Dicom.Network
             CalcSpeed(numBytes, elapsed.TotalMilliseconds, false);
             return numBytes;
         }
+
         private Task ListenAndProcessPDUAsync()
         {
             return Task.Factory.StartNew(() =>
             {
+                //CachedStreamReader cachedReader = null;
+                RawPDU raw = null;
                 try
                 {
                     while (IsConnected)
@@ -607,7 +611,8 @@ namespace Dicom.Network
                         }
                         while (_readLength > 0);
 
-                        var raw = new RawPDU(buffer);
+                        raw = new RawPDU(buffer);
+                        string test = raw.Dump();
 
                         switch (raw.Type)
                         {
@@ -727,6 +732,7 @@ namespace Dicom.Network
                                         LogID,
                                         pdu.Source,
                                         pdu.Reason);
+                                    AssociationState = DicomAssociationState.Aborted;
                                     (this as IDicomService)?.OnReceiveAbort(pdu.Source, pdu.Reason);
                                     if (TryCloseConnection()) return;
                                     break;
@@ -1208,11 +1214,11 @@ namespace Dicom.Network
                     Association.PresentationContexts.FirstOrDefault(
                         x => x.Result == DicomPresentationContextResult.Accept && x.AbstractSyntax == msg.SOPClassUID);
             }
-
-            if (pc == null)
-            {
-                pc = msg.PresentationContext;
-            }
+            //why is this here?  Possibly results in using a rejected presentaiton context
+            //if (pc == null)
+            //{
+            //    pc = msg.PresentationContext;
+            //}
 
             if (pc == null)
             {
@@ -1276,7 +1282,7 @@ namespace Dicom.Network
                 {
                 }
 
-                Logger.Error("No accepted presentation context found for abstract syntax: {sopClassUid}", msg.SOPClassUID);
+                Logger.Warn("No accepted presentation context found for abstract syntax: {sopClassUid}", msg.SOPClassUID);
             }
             else
             {
