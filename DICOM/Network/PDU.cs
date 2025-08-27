@@ -711,10 +711,6 @@ namespace Dicom.Network
                                     "Implementation Class UID",
                                     DicomUidType.Unknown);
                         }
-                        else if (ut == 0x55)
-                        {
-                            _assoc.RemoteImplementationVersion = raw.ReadString("Implementation Version", ul);
-                        }
                         else if (ut == 0x53)
                         {
                             _assoc.MaxAsyncOpsInvoked = raw.ReadUInt16("Asynchronous Operations Invoked");
@@ -735,9 +731,40 @@ namespace Dicom.Network
                                 pc.ProviderRole = providerRole == 0x01;
                             }
                         }
-                        else if (ut == 0x56)
+                        else if (ut == 0x55)
+                        {
+                            _assoc.RemoteImplementationVersion = raw.ReadString("Implementation Version", ul);
+                        }
+                        else if (ut == 0x56)//SOP Class Extended Negotiation
                         {
                             _assoc.ExtendedNegotiations.Add(DicomExtendedNegotiation.Create(raw, ul));
+                        }
+                        else if (ut == 0x57)//SOP Class Common Extended Negotiation
+                        {
+                            raw.SkipBytes("Unhandled User Item", ul);
+                        }
+                        else if (ut == 0x58)//User Identity Negotiation
+                        {
+                            // User Identity Negotiation
+                            //var userIdentityType = (DicomUserIdentityType)raw.ReadByte("User Identity Type");
+                            //var positiveResponseRequested = raw.ReadByte("Positive Response Requested") == 0x01;
+                            //var primaryFieldLength = raw.ReadUInt16("User Identity Primary Field-Length");
+                            //var primaryField = raw.ReadString("User Identity Primary Field", primaryFieldLength);
+                            //var secondaryFieldLength = raw.ReadUInt16("User Identity Secondary Field-Length");
+                            //var secondaryField = raw.ReadString("User Identity Secondary Field", secondaryFieldLength);
+
+                            //_assoc.UserIdentityNegotiation = new DicomUserIdentityNegotiation
+                            //{
+                            //    UserIdentityType = userIdentityType,
+                            //    PositiveResponseRequested = positiveResponseRequested,
+                            //    PrimaryField = primaryField,
+                            //    SecondaryField = secondaryField
+                            //};
+                            raw.SkipBytes("Unhandled User Item", ul);
+                        }
+                        else if (ut == 0x59)//Extended Negotiation of User Identity
+                        {
+                            raw.SkipBytes("Unhandled User Item", ul);
                         }
                         else
                         {
