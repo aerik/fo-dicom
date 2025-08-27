@@ -1286,7 +1286,8 @@ namespace Dicom.Network
             }
             else
             {
-                if (msg.PresentationContext == null) msg.PresentationContext = pc;//sort of makes dimse.PresentationContext redundant? Not worrying about it now
+                //if (msg.PresentationContext == null) 
+                    msg.PresentationContext = pc;//sort of makes dimse.PresentationContext redundant? Not worrying about it now
                 if (msg is DicomRequest)
                 {
                     DicomRequest req = msg as DicomRequest;

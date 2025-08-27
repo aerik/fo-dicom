@@ -176,7 +176,10 @@ namespace Dicom
         {
             if (_values == null || _count == -1)
             {
-                if (String.IsNullOrEmpty(StringValue)) _values = new string[0];
+                if (String.IsNullOrEmpty(StringValue))
+                {
+                    _values = new string[0];
+                }
                 else _values = StringValue.Split('\\');
                 _count = _values.Length;
                 //trim spaces from UIDS with bad padding

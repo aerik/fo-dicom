@@ -54,7 +54,7 @@ namespace Dicom.IO
             if (storagePath != null)
             {
                 // create file in user specified path
-                var path = IOManager.Path.Combine(storagePath, Guid.NewGuid().ToString());
+                var path = IOManager.Path.Combine(storagePath, Guid.NewGuid().ToString().Replace("-","")+".tmp");
                 file = IOManager.CreateFileReference(path);
                 file.Create().Dispose();
             }
