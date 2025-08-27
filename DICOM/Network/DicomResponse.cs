@@ -40,6 +40,7 @@ namespace Dicom.Network
             RequestMessageID = request.MessageID;
             Status = status;
             UserState = request.UserState;
+            Association = request.Association;
         }
 
         /// <summary>

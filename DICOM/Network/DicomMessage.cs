@@ -135,6 +135,8 @@ namespace Dicom.Network
         /// </summary>
         public object UserState { get; set; }
 
+        public DicomAssociation Association { get; internal set; }
+
         /// <summary>
         /// Formatted output of the DICOM message.
         /// </summary>
