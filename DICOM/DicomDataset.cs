@@ -9,6 +9,7 @@ namespace Dicom
     using System.Collections.Generic;
     using System.Linq;
     using System.Reflection;
+    using System.Text;
 
 
     /// <summary>
@@ -23,6 +24,27 @@ namespace Dicom
         private DicomTransferSyntax _syntax;
 
         private bool _isDisposed = false; // To detect redundant calls
+
+        private Encoding _DataSetEncoding = null;
+
+        public Encoding DataSetEncoding
+        {
+            get
+            {
+                if (_DataSetEncoding != null)
+                {
+                    return _DataSetEncoding;
+                }
+                else
+                {
+                    return DicomEncoding.Default;
+                }
+            }
+            private set
+            {
+                _DataSetEncoding = value;
+            }
+        }
 
         #endregion
 
@@ -73,6 +95,7 @@ namespace Dicom
                         {
                             item.Validate();
                         }
+                        CheckForCharacterSet(item);
                         _items[item.Tag] = item;
                     }
                 }
@@ -777,6 +800,7 @@ namespace Dicom
                             tag = GetPrivateTag(tag);
                             item.Tag = tag;
                         }
+                        CheckForCharacterSet(item);
                         if (ValidateItems) item.Validate();
                         _items[tag] = item;
                     }
@@ -793,6 +817,7 @@ namespace Dicom
                             tag = GetPrivateTag(tag);
                             item.Tag = tag;
                         }
+                        CheckForCharacterSet(item);
                         if (ValidateItems) item.Validate();
                         _items.Add(tag, item);
                     }
@@ -819,6 +844,7 @@ namespace Dicom
                     item.Tag = tag;
                 }
                 if (ValidateItems) item.Validate();
+                CheckForCharacterSet(item);
                 if (allowUpdate)
                 {
                     _items[tag] = item;
@@ -829,6 +855,19 @@ namespace Dicom
                 }
             }
             return this;
+        }
+
+        private void CheckForCharacterSet(DicomItem item)
+        {
+            if (item.Tag == DicomTag.SpecificCharacterSet)
+            {
+                DicomElement cs = (DicomElement)item;
+                Encoding newEncoding = DicomEncoding.GetEncoding(cs.Get<string>());
+                if (newEncoding != null && newEncoding != this.DataSetEncoding)
+                {
+                    UpdateEncoding(newEncoding);
+                }
+            }
         }
 
         /// <summary>
@@ -956,6 +995,14 @@ namespace Dicom
                 if (values == null) return DoAdd(new DicomDecimalString(tag, EmptyBuffer.Value), allowUpdate);
                 if (typeof(T) == typeof(decimal)) return DoAdd(new DicomDecimalString(tag, values.Cast<decimal>().ToArray()), allowUpdate);
                 if (typeof(T) == typeof(string)) return DoAdd(new DicomDecimalString(tag, values.Cast<string>().ToArray()), allowUpdate);
+                if(IsNumericType(typeof (T)))
+                {
+                    IList<decimal> decimalValues;
+                    if (TryCastList(values, out decimalValues))
+                    {
+                        return DoAdd(new DicomDecimalString(tag, decimalValues.ToArray()), allowUpdate);
+                    }
+                }
             }
 
             if (vr == DicomVR.DT)
@@ -1000,18 +1047,26 @@ namespace Dicom
                 if (values == null) return DoAdd(new DicomIntegerString(tag, EmptyBuffer.Value), allowUpdate);
                 if (typeof(T) == typeof(int)) return DoAdd(new DicomIntegerString(tag, values.Cast<int>().ToArray()), allowUpdate);
                 if (typeof(T) == typeof(string)) return DoAdd(new DicomIntegerString(tag, values.Cast<string>().ToArray()), allowUpdate);
+                if (IsNumericType(typeof(T)))
+                {
+                    IList<int> intValues;
+                    if ((TryCastList(values, out intValues)))
+                    {
+                        return DoAdd(new DicomIntegerString(tag, intValues.ToArray()), allowUpdate);
+                    }
+                }
             }
 
             if (vr == DicomVR.LO)
             {
                 if (values == null) return DoAdd(new DicomLongString(tag, DicomEncoding.Default, EmptyBuffer.Value), allowUpdate);
-                if (typeof(T) == typeof(string)) return DoAdd(new DicomLongString(tag, values.Cast<string>().ToArray()), allowUpdate);
+                if (typeof(T) == typeof(string)) return DoAdd(new DicomLongString(tag, DataSetEncoding, values.Cast<string>().ToArray()), allowUpdate);
             }
 
             if (vr == DicomVR.LT)
             {
                 if (values == null) return DoAdd(new DicomLongText(tag, DicomEncoding.Default, EmptyBuffer.Value), allowUpdate);
-                if (typeof(T) == typeof(string)) return DoAdd(new DicomLongText(tag, values.Cast<string>().First()), allowUpdate);
+                if (typeof(T) == typeof(string)) return DoAdd(new DicomLongText(tag, DataSetEncoding, values.Cast<string>().First()), allowUpdate);
             }
 
             if (vr == DicomVR.OB)
@@ -1072,13 +1127,13 @@ namespace Dicom
             if (vr == DicomVR.PN)
             {
                 if (values == null) return DoAdd(new DicomPersonName(tag, DicomEncoding.Default, EmptyBuffer.Value), allowUpdate);
-                if (typeof(T) == typeof(string)) return DoAdd(new DicomPersonName(tag, values.Cast<string>().ToArray()), allowUpdate);
+                if (typeof(T) == typeof(string)) return DoAdd(new DicomPersonName(tag, DataSetEncoding, values.Cast<string>().ToArray()), allowUpdate);
             }
 
             if (vr == DicomVR.SH)
             {
                 if (values == null) return DoAdd(new DicomShortString(tag, DicomEncoding.Default, EmptyBuffer.Value), allowUpdate);
-                if (typeof(T) == typeof(string)) return DoAdd(new DicomShortString(tag, values.Cast<string>().ToArray()), allowUpdate);
+                if (typeof(T) == typeof(string)) return DoAdd(new DicomShortString(tag, DataSetEncoding, values.Cast<string>().ToArray()), allowUpdate);
             }
 
             if (vr == DicomVR.SL)
@@ -1090,6 +1145,14 @@ namespace Dicom
                 if (ParseVrValueFromString(values, tag.DictionaryEntry.ValueMultiplicity, int.Parse, out parsedValues))
                 {
                     return DoAdd(new DicomSignedLong(tag, parsedValues.ToArray()), allowUpdate);
+                }
+                if (IsNumericType(typeof(T)))
+                {
+                    IList<int> intValues;
+                    if ((TryCastList(values, out intValues)))
+                    {
+                        return DoAdd(new DicomIntegerString(tag, intValues.ToArray()), allowUpdate);
+                    }
                 }
             }
 
@@ -1116,7 +1179,7 @@ namespace Dicom
             if (vr == DicomVR.ST)
             {
                 if (values == null) return DoAdd(new DicomShortText(tag, DicomEncoding.Default, EmptyBuffer.Value), allowUpdate);
-                if (typeof(T) == typeof(string)) return DoAdd(new DicomShortText(tag, values.Cast<string>().First()), allowUpdate);
+                if (typeof(T) == typeof(string)) return DoAdd(new DicomShortText(tag, DataSetEncoding, values.Cast<string>().First()), allowUpdate);
             }
 
             if (vr == DicomVR.TM)
@@ -1132,7 +1195,7 @@ namespace Dicom
             if (vr == DicomVR.UC)
             {
                 if (values == null) return DoAdd(new DicomUnlimitedCharacters(tag, DicomEncoding.Default, EmptyBuffer.Value), allowUpdate);
-                if (typeof(T) == typeof(string)) return DoAdd(new DicomUnlimitedCharacters(tag, values.Cast<string>().ToArray()), allowUpdate);
+                if (typeof(T) == typeof(string)) return DoAdd(new DicomUnlimitedCharacters(tag, DataSetEncoding, values.Cast<string>().ToArray()), allowUpdate);
             }
 
             if (vr == DicomVR.UI)
@@ -1169,7 +1232,7 @@ namespace Dicom
             if (vr == DicomVR.UR)
             {
                 if (values == null) return DoAdd(new DicomUniversalResource(tag, DicomEncoding.Default, EmptyBuffer.Value), allowUpdate);
-                if (typeof(T) == typeof(string)) return DoAdd(new DicomUniversalResource(tag, values.Cast<string>().First()), allowUpdate);
+                if (typeof(T) == typeof(string)) return DoAdd(new DicomUniversalResource(tag, DataSetEncoding, values.Cast<string>().First()), allowUpdate);
             }
 
             if (vr == DicomVR.US)
@@ -1187,11 +1250,157 @@ namespace Dicom
             if (vr == DicomVR.UT)
             {
                 if (values == null) return DoAdd(new DicomUnlimitedText(tag, DicomEncoding.Default, EmptyBuffer.Value), allowUpdate);
-                if (typeof(T) == typeof(string)) return DoAdd(new DicomUnlimitedText(tag, values.Cast<string>().First()), allowUpdate);
+                if (typeof(T) == typeof(string)) return DoAdd(new DicomUnlimitedText(tag, DataSetEncoding, values.Cast<string>().First()), allowUpdate);
             }
 
             throw new InvalidOperationException(
                 $"Unable to create DICOM element of type {vr.Code} with values of type {typeof(T)}");
+        }
+        private sealed class _StringSnapshot
+        {
+            public DicomVR Vr;
+            public string[] Values; // normalized values; for single-valued VRs this will contain one item
+        }
+        private void UpdateEncoding(Encoding newEncoding)
+        {
+            if (newEncoding == null || newEncoding == this.DataSetEncoding) return;
+            Dictionary<DicomTag, _StringSnapshot> oldTagValues = new Dictionary<DicomTag, _StringSnapshot>();
+            var items = this.ToList(); // snapshot to avoid modify-while-iterate
+            foreach (DicomItem item in items)
+            {
+                if(item.Tag == DicomTag.SpecificCharacterSet) continue;
+                if (item is DicomSequence)
+                {
+                    var seq = item as DicomSequence;
+                    foreach (var ds in seq.Items)
+                    {
+                        ds.UpdateEncoding(newEncoding);
+                    }
+                }
+                else if (item is DicomStringElement)
+                {
+                    string[] oldValues;
+                    if (item is DicomMultiStringElement)
+                    {
+                        oldValues = (item as DicomMultiStringElement).Get<string[]>();
+                    }
+                    else
+                    {
+                        var stringElement = item as DicomStringElement;
+                        oldValues = new string[] { stringElement.Get<string>() };
+                    }
+                    var snap = new _StringSnapshot()
+                    {
+                        Vr = item.ValueRepresentation, //explicit VR ?
+                        Values = oldValues
+                    };
+                    oldTagValues[item.Tag]= snap;
+                }
+            }
+            this._DataSetEncoding = newEncoding;
+            foreach (var kv in oldTagValues)
+            {
+                var tag = kv.Key;
+                var snap = kv.Value;
+                var values = snap.Values;
+                var vr = snap.Vr;
+                this.AddOrUpdate(vr, tag, values);
+            }
+        }
+
+
+        private static bool TryCastList<T,U>(IList<U> source, out IList<T> result)
+        where T : struct
+        {
+            result = null;
+
+            if (source == null)
+            {
+                return false;
+            }
+
+            result = new List<T>();
+
+            try
+            {
+                foreach (var item in source)
+                {
+                    if (!TryCastNumeric(item, out T castedItem))
+                    {
+                        result = null;
+                        return false;
+                    }
+                    result.Add(castedItem);
+                }
+                return true;
+            }
+            catch
+            {
+                result = null;
+                return false;
+            }
+        }
+
+        private static bool TryCastNumeric<T>(object value, out T result)
+        where T : struct
+        {
+            result = default;
+            if(value == null)
+            {
+                return false;
+            }
+
+            Type targetType = typeof(T);
+            Type valueType = value.GetType();
+
+
+            if (!IsNumericType(targetType) || !IsNumericType(valueType))
+            {
+                return false;
+            }
+
+            try
+            {
+                // First, attempt to cast the value to the target type
+                var convertedValue = Convert.ChangeType(value, targetType);
+
+                // Check for precision loss by converting back to the original type and comparing
+                var reconvertedValue = Convert.ChangeType(convertedValue, valueType);
+                if (!value.Equals(reconvertedValue))
+                {
+                    return false;
+                }
+
+                result = (T)convertedValue;
+                return true;
+            }
+            catch (InvalidCastException)
+            {
+                return false;
+            }
+            catch (FormatException)
+            {
+                return false;
+            }
+            catch (OverflowException)
+            {
+                return false;
+            }
+        }
+
+        private static bool IsNumericType(Type type)
+        {
+            return type == typeof(byte) ||
+                   type == typeof(sbyte) ||
+                   type == typeof(ushort) ||
+                   type == typeof(uint) ||
+                   type == typeof(ulong) ||
+                   type == typeof(short) ||
+                   type == typeof(int) ||
+                   type == typeof(long) ||
+                   type == typeof(decimal) ||
+                   type == typeof(double) ||
+                   type == typeof(float);
         }
 
         private static bool ParseVrValueFromString<T, TOut>(
