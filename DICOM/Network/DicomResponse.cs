@@ -73,7 +73,14 @@ namespace Dicom.Network
             set
             {
                 Command.AddOrUpdate(DicomTag.Status, value.Code);
-                Command.AddOrUpdate(DicomTag.ErrorComment, value.ErrorComment);
+                if (!String.IsNullOrWhiteSpace(value.ErrorComment))
+                {
+                    Command.AddOrUpdate(DicomTag.ErrorComment, value.ErrorComment);
+                }
+                else
+                {
+                    Command.Remove(DicomTag.ErrorComment);
+                }
             }
         }
 
