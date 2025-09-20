@@ -26,6 +26,8 @@ namespace Dicom.Network
 
         private readonly List<DicomRequest> requests;
 
+        private readonly List<DicomRequest> sent;
+
         private DicomServiceUser service;
 
         private int asyncInvoked;
@@ -49,6 +51,7 @@ namespace Dicom.Network
         public DicomClient()
         {
             this.requests = new List<DicomRequest>();
+            this.sent = new List<DicomRequest>();
             this.AdditionalPresentationContexts = new List<DicomPresentationContext>();
             this.asyncInvoked = 1;
             this.asyncPerformed = 1;
@@ -185,6 +188,43 @@ namespace Dicom.Network
             lock (this.locker)
             {
                 this.requests.Add(request);
+            }
+        }
+
+        public void CancelRequest(DicomRequest request)
+        {
+            lock (this.locker)
+            {
+                if (this.requests.Contains(request))
+                {
+                    this.requests.Remove(request);
+                }
+                else if (this.sent.Contains(request))
+                {
+                    if(this.service != null && this.service.IsConnected)
+                    {
+                        var req = sent.FirstOrDefault(x => x.MessageID == request.MessageID);
+                        if (req == null) return;
+                        DicomCCancelRequest creq;
+                        if(req is DicomCGetRequest)
+                        {
+                            creq = DicomCCancelRequest.Create((DicomCGetRequest)req);
+                        }
+                        else if (req is DicomCFindRequest)
+                        {
+                            creq = DicomCCancelRequest.Create((DicomCFindRequest)req);
+                        }
+                        else if (req is DicomCMoveRequest)
+                        {
+                            creq = DicomCCancelRequest.Create((DicomCMoveRequest)req);
+                        }
+                        else
+                        {
+                            throw new InvalidOperationException("Cannot cancel request of type " + req.GetType().Name);
+                        }
+                        if(creq != null) this.service.SendCancellation(creq);
+                    }
+                }
             }
         }
 
@@ -465,6 +505,7 @@ namespace Dicom.Network
                         if (!cancelTok.IsCancellationRequested) //is always false for CancellationToken.None
                         {
                             service.SendRequest(request);
+                            sent.Add(request);
                         }
                         else
                         {
@@ -731,6 +772,14 @@ namespace Dicom.Network
                 finally
                 {
                     SetComplete(exception);
+                }
+            }
+
+            internal void SendCancellation(DicomCCancelRequest cancelReq)
+            {
+                if (IsConnected)
+                {
+                    SendRequest(cancelReq);                    
                 }
             }
 
