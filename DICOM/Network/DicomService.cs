@@ -51,7 +51,8 @@ namespace Dicom.Network
 
         private readonly List<DicomRequest> _pending;//outbound
 
-        private readonly List<DicomRequest> _received;//inbound
+        //private readonly List<DicomRequest> _received;//inbound
+        private readonly System.Collections.Concurrent.ConcurrentDictionary<ushort, DicomRequest> _received;
 
         private DicomMessage _dimse;
 
@@ -101,7 +102,7 @@ namespace Dicom.Network
             MaximumPDUsInQueue = 16;
             _msgQueue = new Queue<DicomMessage>();
             _pending = new List<DicomRequest>();
-            _received = new List<DicomRequest>();
+            _received = new System.Collections.Concurrent.ConcurrentDictionary<ushort, DicomRequest>();
             IsConnected = true;
             _fallbackEncoding = fallbackEncoding ?? DicomEncoding.Default;
             Logger = log ?? LogManager.GetLogger("Dicom.Network");
@@ -218,6 +219,31 @@ namespace Dicom.Network
         #region METHODS
 
         /// <summary>
+        /// Determines if the DIMSE message is complete based on the current DIMSE and PDV.
+        /// </summary>
+        /// <param name="dimse">The current in-progress DIMSE message (DicomMessage).</param>
+        /// <param name="pdv">The current PDV being processed.</param>
+        /// <returns>True if the DIMSE message is complete and ready to process.</returns>
+        private static bool IsDimseComplete(DicomMessage dimse, PDataTF pdu)
+        {
+            if (dimse == null || pdu == null || pdu.PDVs == null || pdu.PDVs.Count == 0)
+                return false;
+
+            var pdv = pdu.PDVs.LastOrDefault();
+
+            // If the DIMSE does not have a dataset, it's complete after the last command fragment
+            if (!dimse.HasDataset && pdv.IsCommand && pdv.IsLastFragment)
+                return true;
+
+            // If the DIMSE has a dataset, it's complete after the last dataset fragment
+            if (dimse.HasDataset && !pdv.IsCommand && pdv.IsLastFragment)
+                return true;
+
+            // Otherwise, not complete yet
+            return false;
+        }
+
+        /// <summary>
         /// Performs application-defined tasks associated with freeing, releasing, or resetting unmanaged resources.
         /// </summary>
         /// <filterpriority>2</filterpriority>
@@ -285,7 +311,6 @@ namespace Dicom.Network
             }
             _disposed = true;
         }
-
 
         private void CalcSpeed(long byteCount, double networkMs, bool dirIsUp, bool force = false)
         {
@@ -530,23 +555,40 @@ namespace Dicom.Network
         /// <param name="offset"></param>
         /// <param name="count"></param>
         /// <returns></returns>
-        private int ReadStream(Stream stream, byte[] buffer, int offset, int count)
+        //private int ReadStream(Stream stream, byte[] buffer, int offset, int count)
+        //{
+        //    DateTime start = DateTime.UtcNow;
+        //    lock (_networkCounterLock) _networkCounter++;
+        //    int numBytes = stream.Read(buffer, offset, count);
+        //    lock (_networkCounterLock) _networkCounter--;
+        //    TimeSpan elapsed = DateTime.UtcNow - start;
+        //    //Logger.Debug("Read " + numBytes + " bytes after " + elapsed.TotalMilliseconds);
+        //    CalcSpeed(numBytes, elapsed.TotalMilliseconds, false);
+        //    return numBytes;
+        //}
+
+        private async Task<int> ReadStreamAsync(Stream stream, byte[] buffer, int offset, int count)
         {
             DateTime start = DateTime.UtcNow;
-            lock (_networkCounterLock) _networkCounter++;
-            int numBytes = stream.Read(buffer, offset, count);
-            lock (_networkCounterLock) _networkCounter--;
-            TimeSpan elapsed = DateTime.UtcNow - start;
-            //Logger.Debug("Read " + numBytes + " bytes after " + elapsed.TotalMilliseconds);
-            CalcSpeed(numBytes, elapsed.TotalMilliseconds, false);
-            return numBytes;
+            Interlocked.Increment(ref _networkCounter);
+            try
+            {
+                int numBytes = await stream.ReadAsync(buffer, offset, count).ConfigureAwait(false);
+                TimeSpan elapsed = DateTime.UtcNow - start;
+                //Logger.Debug("Read " + numBytes + " bytes after " + elapsed.TotalMilliseconds);
+                CalcSpeed(numBytes, elapsed.TotalMilliseconds, false);
+                return numBytes;
+            }
+            finally
+            {
+                Interlocked.Decrement(ref _networkCounter);
+            }
         }
 
         private Task ListenAndProcessPDUAsync()
         {
-            return Task.Factory.StartNew(() =>
+            return Task.Factory.StartNew(async() =>
             {
-                //CachedStreamReader cachedReader = null;
                 RawPDU raw = null;
                 var pDataTasks = new List<Task>();
                 try
@@ -562,7 +604,7 @@ namespace Dicom.Network
                         var count = 0;
                         if (stream.CanRead)
                         {
-                            count = ReadStream(stream, buffer, 0, 6);
+                            count = await ReadStreamAsync(stream, buffer, 0, 6).ConfigureAwait(false);
                         }
                         do
                         {
@@ -581,7 +623,7 @@ namespace Dicom.Network
                             _readLength -= count;
                             if (_readLength > 0)
                             {
-                                count = ReadStream(stream, buffer, 6 - _readLength, _readLength);
+                                count = await ReadStreamAsync(stream, buffer, 6 - _readLength, _readLength).ConfigureAwait(false);
                             }
                         }
                         while (_readLength > 0);
@@ -596,7 +638,7 @@ namespace Dicom.Network
                         _readLength = length;
 
                         Array.Resize(ref buffer, length + 6);
-                        count = ReadStream(stream, buffer, 6, length);
+                        count = await ReadStreamAsync(stream, buffer, 6, length).ConfigureAwait(false);
 
                         // Read PDU
                         do
@@ -611,13 +653,13 @@ namespace Dicom.Network
                             _readLength -= count;
                             if (_readLength > 0)
                             {
-                                count = ReadStream(stream, buffer, buffer.Length - _readLength, _readLength);
+                                count = await ReadStreamAsync(stream, buffer, buffer.Length - _readLength, _readLength).ConfigureAwait(false);
                             }
                         }
                         while (_readLength > 0);
 
                         raw = new RawPDU(buffer);
-                        string test = raw.Dump();
+                        //string test = raw.Dump();
 
                         switch (raw.Type)
                         {
@@ -705,8 +747,22 @@ namespace Dicom.Network
                                     var pdu = new PDataTF();
                                     pdu.Read(raw);
                                     if (Options.LogDataPDUs) Logger.Debug("{logId} <- {@pdu}", LogID, pdu);
-                                    //await this.ProcessPDataTFAsync(pdu).ConfigureAwait(false);
-                                    pDataTasks.Add(this.ProcessPDataTFAsync(pdu));
+                                    await this.ProcessPDataTFAsync(pdu).ConfigureAwait(false);
+                                    //this.ProcessPDataTFAsync(pdu).Wait();
+                                    if(IsDimseComplete(_dimse, pdu))
+                                    {
+                                        var dimse = _dimse;
+                                        _dimse = null;
+                                        if (DicomMessage.IsRequest(dimse.Type) && dimse.Type != DicomCommandField.CCancelRequest)
+                                        {
+                                            //check asyncop limits
+                                            if (Association.MaxAsyncOpsInvoked > 0 && _received.Count >= Association.MaxAsyncOpsInvoked)
+                                            {
+                                                break; //more than allowed, just ignore it
+                                            }
+                                        }
+                                        pDataTasks.Add(PerformDimse(dimse));
+                                    }
                                     break;
                                 }
                             case 0x05:
@@ -739,10 +795,11 @@ namespace Dicom.Network
                                         pdu.Reason);
                                     AssociationState = DicomAssociationState.Aborted;
                                     (this as IDicomService)?.OnReceiveAbort(pdu.Source, pdu.Reason);
-                                    foreach(var req in _received)
+                                    foreach(var req in _received.Values)
                                     {
                                         req.SetCancelled();
                                     }
+                                    _received.Clear();
                                     if (TryCloseConnection()) return;
                                     break;
                                 }
@@ -939,9 +996,7 @@ namespace Dicom.Network
                             _dimse.Association = Association;
                             if (!_dimse.HasDataset)
                             {
-                                var dimse = _dimse;
-                                _dimse = null;
-                                await PerformDimse(dimse).ConfigureAwait(false);
+                                //performdimse
                                 return;
                             }
                         }
@@ -1000,9 +1055,7 @@ namespace Dicom.Network
                                 }
                             }
 
-                            var dimse = _dimse;
-                            _dimse = null;
-                            await PerformDimse(dimse).ConfigureAwait(false);
+                            //performdimse
                         }
                     }
                 }
@@ -1053,19 +1106,17 @@ namespace Dicom.Network
                 {
                     DicomCCancelRequest cancelRequest = dimse as DicomCCancelRequest;
                     DicomRequest req;
-                    lock (_lock)
+                    if (_received.TryGetValue(cancelRequest.RequestToCancelMessageID, out req))
                     {
-                        req = _received.FirstOrDefault(x => x.MessageID == cancelRequest.RequestToCancelMessageID);
                         req?.SetCancelled();
+                        _received.TryRemove(cancelRequest.RequestToCancelMessageID, out _);
                     }
-                    return;//no response
+                    return;//no response, not added to _received
                 }
                 else
                 {
-                    lock (_lock)
-                    {
-                        _received.Add(dimse as DicomRequest);
-                    }
+                    DicomRequest dreq = dimse as DicomRequest;
+                    _received.TryAdd(dreq.MessageID, dreq);
                 }
 
                 if (dimse.Type == DicomCommandField.CStoreRequest)
@@ -1074,65 +1125,54 @@ namespace Dicom.Network
                     {
                         var response = (this as IDicomCStoreProvider).OnCStoreRequest(dimse as DicomCStoreRequest);
                         SendResponse(response);
-                        return;
                     }
                     else if (this is IDicomServiceUser)
                     {
                         var response = (this as IDicomServiceUser).OnCStoreRequest(dimse as DicomCStoreRequest);
                         SendResponse(response);
-                        return;
                     }
                     else
                     {
                         throw new DicomNetworkException("C-Store SCP not implemented");
                     }
                 }
-
-                if (dimse.Type == DicomCommandField.CFindRequest)
+                else if (dimse.Type == DicomCommandField.CFindRequest)
                 {
                     if (this is IDicomCFindProvider)
                     {
                         var responses = (this as IDicomCFindProvider).OnCFindRequest(dimse as DicomCFindRequest);
                         foreach (var response in responses) SendResponse(response);
-                        return;
                     }
                     else throw new DicomNetworkException("C-Find SCP not implemented");
                 }
-
-                if (dimse.Type == DicomCommandField.CGetRequest)
+                else if (dimse.Type == DicomCommandField.CGetRequest)
                 {
                     if (this is IDicomCGetProvider)
                     {
                         var responses = (this as IDicomCGetProvider).OnCGetRequest(dimse as DicomCGetRequest);
                         foreach (var response in responses) SendResponse(response);
-                        return;
                     }
                     else throw new DicomNetworkException("C-GET SCP not implemented");
                 }
-
-                if (dimse.Type == DicomCommandField.CMoveRequest)
+                else if (dimse.Type == DicomCommandField.CMoveRequest)
                 {
                     if (this is IDicomCMoveProvider)
                     {
                         var responses = (this as IDicomCMoveProvider).OnCMoveRequest(dimse as DicomCMoveRequest);
                         foreach (var response in responses) SendResponse(response);
-                        return;
                     }
                     else throw new DicomNetworkException("C-Move SCP not implemented");
                 }
-
-                if (dimse.Type == DicomCommandField.CEchoRequest)
+                else if (dimse.Type == DicomCommandField.CEchoRequest)
                 {
                     if (this is IDicomCEchoProvider)
                     {
                         var response = (this as IDicomCEchoProvider).OnCEchoRequest(dimse as DicomCEchoRequest);
                         SendResponse(response);
-                        return;
                     }
                     else throw new DicomNetworkException("C-Echo SCP not implemented");
                 }
-
-                if (dimse.Type == DicomCommandField.NActionRequest || dimse.Type == DicomCommandField.NCreateRequest
+                else if (dimse.Type == DicomCommandField.NActionRequest || dimse.Type == DicomCommandField.NCreateRequest
                     || dimse.Type == DicomCommandField.NDeleteRequest
                     || dimse.Type == DicomCommandField.NEventReportRequest
                     || dimse.Type == DicomCommandField.NGetRequest || dimse.Type == DicomCommandField.NSetRequest)
@@ -1158,11 +1198,16 @@ namespace Dicom.Network
                                 dimse as DicomNSetRequest);
 
                     SendResponse(response);
-                    return;
                 }
-
-                throw new DicomNetworkException("Operation not implemented");
-            }, TaskCreationOptions.LongRunning);
+                else
+                {
+                    throw new DicomNetworkException("Operation not implemented");
+                }
+                if (DicomMessage.IsRequest(dimse.Type))
+                {
+                    _received.TryRemove((dimse as DicomRequest).MessageID, out _);
+                }
+            });//, TaskCreationOptions.LongRunning ?
         }
 
         private void SendMessage(DicomMessage message)
