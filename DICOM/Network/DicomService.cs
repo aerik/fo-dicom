@@ -1094,8 +1094,10 @@ namespace Dicom.Network
                 if (_performing) return;//already doing stuff
                 int maxConcurrency = Association.MaxAsyncOpsInvoked;
                 if (maxConcurrency == 0) maxConcurrency = 10;//?
-                if (_receivedProcessing.Count >= maxConcurrency) return;//too many at once
-
+                if (_receivedProcessing.Count >= maxConcurrency)
+                {
+                    return;//too many at once
+                }
                 dimse = _receivedQueue[0];
                 _receivedQueue.RemoveAt(0);
                 _receivedProcessing.Add(dimse);
@@ -1230,6 +1232,7 @@ namespace Dicom.Network
                         {
                             _pending.Remove(req);
                         }
+                        SendNextMessage();//possibly trigger association release
                     }
                 }
                 return;
