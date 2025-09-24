@@ -96,7 +96,7 @@ namespace Dicom.Network
             sb.AppendFormat("{0} [{1}]: {2}", ToString(Type), RequestMessageID, Status.Description);
             if (Status.State != DicomState.Pending && Status.State != DicomState.Success)
             {
-                if (!String.IsNullOrEmpty(Status.ErrorComment)) sb.AppendFormat("\n\t\tError:		{0}", Status.ErrorComment);
+                if (!String.IsNullOrEmpty(Status.ErrorComment)) sb.AppendFormat("\n\t\tError:\t{0}", Status.ErrorComment);
                 if (Command.Contains(DicomTag.OffendingElement))
                 {
                     string[] tags = Command.Get<string[]>(DicomTag.OffendingElement);

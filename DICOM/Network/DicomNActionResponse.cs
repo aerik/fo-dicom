@@ -88,7 +88,7 @@ namespace Dicom.Network
             if (Command.Contains(DicomTag.ActionTypeID)) sb.AppendFormat("\n\t\tAction Type:	{0:x4}", ActionTypeID);
             if (Status.State != DicomState.Pending && Status.State != DicomState.Success)
             {
-                if (!string.IsNullOrEmpty(Status.ErrorComment)) sb.AppendFormat("\n\t\tError:		{0}", Status.ErrorComment);
+                if (!string.IsNullOrEmpty(Status.ErrorComment)) sb.AppendFormat("\n\t\tError:\t{0}", Status.ErrorComment);
             }
             return sb.ToString();
         }
