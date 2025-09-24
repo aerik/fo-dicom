@@ -1092,11 +1092,11 @@ namespace Dicom.Network
             {
                 if (_receivedQueue.Count == 0) return;//nothing to do
                 if (_performing) return;//already doing stuff
-                int maxConcurrency = Association.MaxAsyncOpsInvoked;
-                if (maxConcurrency == 0) maxConcurrency = 10;//?
+                //we have to accept / queue up to Association.MaxAsyncOpsPerformed, but can process less at a time
+                uint maxConcurrency = Options.MaxDimseConcurrency;
                 if (_receivedProcessing.Count >= maxConcurrency)
                 {
-                    return;//too many at once
+                    return;//already at capacity
                 }
                 dimse = _receivedQueue[0];
                 _receivedQueue.RemoveAt(0);
@@ -1262,10 +1262,65 @@ namespace Dicom.Network
             else
             {
                 DicomRequest dreq = dimse as DicomRequest;
-                lock (_receiveLock) { _receivedQueue.Add(dreq); }
+                lock (_receiveLock) {
+                    int totalOutstanding = _receivedProcessing.Count + _receivedQueue.Count;
+                    if (totalOutstanding >= Association.MaxAsyncOpsPerformed)
+                    {
+                        SendFailureResponse(dreq);
+                    }
+                    else
+                    {
+                        _receivedQueue.Add(dreq);
+                    }
+                }
                 PerformNextRequest();
-            }            
+            }
             SendNextMessage();
+        }
+
+        private void SendFailureResponse(DicomRequest request)
+        {
+            DicomStatus status = new DicomStatus(DicomStatus.ResourceLimitation, "Exceeds MaxAsyncOpsPerformed");
+
+            DicomResponse response = null;
+            switch (request.Type)
+            {
+                case DicomCommandField.CStoreRequest:
+                    response = new DicomCStoreResponse((DicomCStoreRequest)request, status);
+                    break;
+                case DicomCommandField.CFindRequest:
+                    response = new DicomCFindResponse((DicomCFindRequest)request, status);
+                    break;
+                case DicomCommandField.CMoveRequest:
+                    response = new DicomCMoveResponse((DicomCMoveRequest)request, status);
+                    break;
+                case DicomCommandField.CGetRequest:
+                    response = new DicomCGetResponse((DicomCGetRequest)request, status);
+                    break;
+                case DicomCommandField.CEchoRequest:
+                    response = new DicomCEchoResponse((DicomCEchoRequest)request, status);
+                    break;
+                case DicomCommandField.NActionRequest:
+                    response = new DicomNActionResponse((DicomNActionRequest)request, status);
+                    break;
+                case DicomCommandField.NCreateRequest:
+                    response = new DicomNCreateResponse((DicomNCreateRequest)request, status);
+                    break;
+                case DicomCommandField.NDeleteRequest:
+                    response = new DicomNDeleteResponse((DicomNDeleteRequest)request, status);
+                    break;
+                case DicomCommandField.NEventReportRequest:
+                    response = new DicomNEventReportResponse((DicomNEventReportRequest)request, status);
+                    break;
+                case DicomCommandField.NGetRequest:
+                    response = new DicomNGetResponse((DicomNGetRequest)request, status);
+                    break;
+                case DicomCommandField.NSetRequest:
+                    response = new DicomNSetResponse((DicomNSetRequest)request, status);
+                    break;
+            }
+
+            SendResponse(response);
         }
 
         private void SendMessage(DicomMessage message)
