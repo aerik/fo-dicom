@@ -69,6 +69,8 @@ namespace Dicom.Network
         /// <returns>Response from handling the C-STORE <paramref name="request"/>.</returns>
         public delegate DicomCStoreResponse CStoreRequestHandler(DicomCStoreRequest request);
 
+        public delegate void ConnectionClosedHandler(Exception x);
+
         #endregion
 
         #region PROPERTIES
@@ -77,6 +79,8 @@ namespace Dicom.Network
         /// Gets or sets the handler of a client C-STORE request.
         /// </summary>
         public CStoreRequestHandler OnCStoreRequest { get; set; }
+
+        public ConnectionClosedHandler OnConnectionClosed { get; set; }
 
         /// <summary>
         /// Gets or sets time in milliseconds to keep connection alive for additional requests.
@@ -188,6 +192,14 @@ namespace Dicom.Network
             lock (this.locker)
             {
                 this.requests.Add(request);
+            }
+            if(this.service != null && this.service.IsConnected)
+            {
+                this.service.SendRequest(request);
+                lock (this.locker)
+                {
+                    this.sent.Add(request);
+                }
             }
         }
 
@@ -722,21 +734,7 @@ namespace Dicom.Network
             /// <param name="exception">Exception, if any, that forced connection to close.</param>
             public void OnConnectionClosed(Exception exception)
             {
-                //logging handled in DicomService
-                //string msg = "DicomSCU connection closed, Association state: " + AssociationState.ToString();
-                //if(this.Association != null)
-                //{
-                //    msg = this.Association.CalledAE + " -> " + msg;
-                //}
-                //if(exception != null)
-                //{
-                //    msg += "; Error: " + exception.Message;
-                //    Logger.Warn(msg);
-                //}
-                //else
-                //{
-                //    Logger.Info(msg);
-                //}
+                this.client.OnConnectionClosed?.Invoke(exception);
                 SetComplete(exception);
             }
 
