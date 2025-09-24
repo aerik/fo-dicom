@@ -36,7 +36,7 @@ namespace Dicom.Network
                 }
             }
         }
-        
+
 
         /// <summary>Default options for use with the <see cref="DicomService"/> base class.</summary>
         private static class DefaultValues
@@ -54,6 +54,8 @@ namespace Dicom.Network
             public static readonly bool IgnoreSslPolicyErrors = false;
 
             public static readonly bool TcpNoDelay = true;
+
+            public static readonly uint MaxDimseConcurrency = 1;// default to sequential processing
         }
 
         #endregion
@@ -70,6 +72,7 @@ namespace Dicom.Network
             MaxDataBuffer = DefaultValues.MaxDataBuffer;
             IgnoreSslPolicyErrors = DefaultValues.IgnoreSslPolicyErrors;
             TcpNoDelay = DefaultValues.TcpNoDelay;
+            MaxDimseConcurrency = DefaultValues.MaxDimseConcurrency;
         }
 
         public DicomServiceOptions(DicomServiceOptions src)
@@ -81,6 +84,7 @@ namespace Dicom.Network
             MaxDataBuffer = src.MaxDataBuffer;
             IgnoreSslPolicyErrors = src.IgnoreSslPolicyErrors;
             TcpNoDelay = src.TcpNoDelay;
+            MaxDimseConcurrency = src.MaxDimseConcurrency;
         }
         #endregion
 
@@ -106,6 +110,9 @@ namespace Dicom.Network
 
         /// <summary>Enable or disable TCP Nagle algorithm.</summary>
         public bool TcpNoDelay { get; set; }
+
+        /// <summary>Maximum number of received dimses to process in parallel</summary>
+        public uint MaxDimseConcurrency { get; set; }
 
         #endregion
     }
